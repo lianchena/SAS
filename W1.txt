@@ -1,0 +1,414 @@
+
+/*
+fn3,8 run
+f5 editor
+f6 log
+f7 output
+
+ctrl E clear
+*/
+_________________________________________
+* link folder
+* .sas7bdat automative exist in this folder (then no need import)
+* .csv, .xls, .txt need import
+/* LIBNAME ACX3300 '\\ad.monash.edu\home\User076\lche0073\Documents\MONASH_undergrad\ACX3300';*/
+
+LIBNAME ACX3300W1 'C:\Users\15758\Desktop\data3300\W1';
+
+*written to hard drive - permanent;
+DATA ACX3300.TUTORIAL; SET TUTORIAL; RUN;
+-----------------------------------------
+* checks the contents (variables) in datasets:
+sashelp.stocks, sashelp.cars;   
+* This is my code;
+Proc contents data=sashelp.cars;
+run;
+
+Proc datasets;
+contents data = sashelp.cars;
+run;
+
+Proc datasets;
+contents data = sashelp._ALL_;
+run;
+-----------------------------------------
+/*export wizard*/
+PROC EXPORT DATA= SASHELP.Cars 
+            OUTFILE= "C:\Users\15758\Desktop\data3300\W1\cars.csv" 
+            DBMS=CSV REPLACE;
+     PUTNAMES=YES;
+RUN;
+
+/*Import data*/
+* import into sas as permanent .sas7bdat file
+PROC IMPORT OUT=ACX3300.cars
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\CARS.CSV"
+DBMS=CSV REPLACE;
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+
+PROC IMPORT OUT=ACX3300.xls1
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\EXAMPLE.XLS"
+DBMS=XLS REPLACE;
+SHEET="Database";
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+
+PROC IMPORT OUT=ACX3300.xlsx1
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\test1.XLSX"
+DBMS=XLSX REPLACE;
+SHEET="test1";
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+
+PROC IMPORT OUT=ACX3300.rev2094
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\rev2094.TXT"
+DBMS=TAB REPLACE;
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+_________________________________________
+* create new variables or the file
+/*variable names
+_OUTCOME_   (V)
+OUT-COME     (X)  */
+
+* create data, data insert into .sas7bdat file
+DATA TUTORIAL;
+X=10;
+A=X**2;
+F="L";
+L="C";
+B=" ";
+Full=F||B||L;
+RUN;
+
+PROC PRINT DATA=TUTORIAL;
+RUN;
+-----------------------------------------
+DATA TUTORIAL;
+INPUT A B C;
+DATALINES;
+1 2 3
+4 5 6
+7 8 9
+;
+RUN;
+
+PROC PRINT DATA=TUTORIAL;
+RUN;
+-----------------------------------------
+DATA TUTORIAL;
+INPUT A B C $;
+DATALINES;
+1 2 3
+4 5 6
+7 8 N
+;
+RUN;
+
+PROC PRINT DATA=TUTORIAL;
+RUN;
+
+_________________________________________
+
+* freeform;
+* # space doesnt matter, cannot contain quotation mark '';
+DATA MYDATA;
+INPUT ID $ SBP DBP GENDER $ AGE WT;
+DATALINES;
+001 120 80 M 15 115
+002 130 70 F 25 180
+003 140 100 M 89 170
+004 120 80 F 30 150
+005 125 80 F 20 110
+;
+PROC PRINT; RUN;
+
+* reading multiple records per obs
+DATA MYDATA;
+INPUT ID $ SEX $ AGE WT/ SBP DBP BLDCHL/ OBS1 OBS2 OBS3;
+DATALINES;
+10011 M 15 115
+120 80 254
+15 65 102
+10012 F 25 180
+130 70 240
+34 120 132
+10013 M 89 170
+140 100 279
+19 89 111
+;
+PROC PRINT DATA=MYDATA;
+RUN;
+-----------------------------------------
+* compact data format;
+* it is to tell SAS that the input should be read from multiple lines;
+* only .5 incomplete, should be .5 .5 to become new row
+* currently 37 # so 18 rows(1 # left)
+DATA WEIGHT;
+INPUT TREATMENT LOSS @@;
+DATALINES;
+1 1.0 1 3.0 1 -1 -1.0 1 1.5 1 0.5 1 3.5
+2 4.5 2 6.0 2 3.5 2 7.5 2 7.0 2 6.0 2 5.5
+3 1.5 3 -2.5 3 -0.5 3 1.0 3 .5
+;
+PROC PRINT; RUN;
+-----------------------------------------
+* column input;
+* allows empty data;
+DATA MYDATA;
+INPUT ID $ 1-3 SBP 4-6 DBP 7-9 GENDER $ 10 AGE 11-12 WT 13-15;
+DATALINES;
+001120 80M15115
+002130 70F25180
+003140100M89170
+004120 80F30150
+005125 80 20110
+;
+PROC PRINT; RUN;
+-----------------------------------------
+* formatted input
+/* informat
+5. five digits no decimal (-9999to99999.)
+5.2 five digits two decimals (-9.99to99.99)
+$5. character with 5 digits (ADBSD, 34422)
+COMMA7. ($40,000 read as 40000)
+COMMA10.2 ($19,020.22 read as 19020.22)
+MMDDYY8. (01/12/16.)
+MMDDYY10. (04/07/2016)
+DATE9. (12JAN2016.)
+*/
+
+/*FORMAT 
+output
+5. Write data using five columns with no decimal points. For example, 12345
+5.1 Write data using five columns with one decimal point. For example, 123.4
+DOLLAR10.2 Write data with a dollar sign, commas at thousands, and with two decimal places. For example, $1,234.56
+COMMA10.1 Write date with commas at thousands and with one decimal place. For example, 1,234.5
+MMDDYY10. Displays dates in common American usage as in 01/09/2016
+DATE9. Displays time using a military style format. For example, 09JAN2016
+WORDDATE12. Displays dates with abbreviated month names as in Jan 9, 2016
+WORDDATE18. Displays dates with full month names such as in January 9, 2016
+WEEKDATE29. Displays dates with day of week as in Saturday, January 9, 2016
+BESTw. Prints out numbers with maximum precision according to the designated width w
+*/
+
+DATA MYDATA;
+INPUT @1 SBP 3. @4 DBP 3. @7 GENDER $1. @8 WT 3. @12 OWE COMMA9.;
+DATALINES;
+120 80M115 $5,431.00
+130 70F180 $12,122
+140100M170 7550
+120 80F150 4,523.2
+125 80F110 $1000.99
+;
+PROC PRINT DATA=MYDATA;
+RUN;
+
+DATA REPORT;
+INPUT @1 NAME $5. @6 SCORE 5.2 @13 BDATE DATE9.;
+FORMAT BDATE WORDDATE12.;
+DATALINES;
+Bill 22.12 09JAN2016
+Jane 33.01 02FEB2000
+Clyde 15.45 23MAR1999
+;
+PROC PRINT DATA=REPORT;
+RUN;
+
+DATA PEOPLE;
+INFORMAT LASTNAME FIRSTNAME $12. AGE 3. SCORE 4.2;
+INPUT LASTNAME FIRSTNAME AGE SCORE;
+DATALINES;
+Lincoln George 35 3.45
+Ryan Lacy 33 5.5
+;
+PROC PRINT DATA=PEOPLE;
+RUN;
+
+-----------------------------------------
+* infile statement
+/*
+101 A  12 22.3 25.3 28.2 30.6 5 0
+102 A  11 22.8 27.5 33.3 35.8 5 0
+104 B  12 22.8 30.0 32.8 31.0 4 0
+110 A  12 18.5 26.0 29.0 27.9 5 1
+*/
+DATA MYDATA;
+INFILE 'C:\Users\15758\Desktop\data3300\W1\EXAMPLE.TXT';
+INPUT ID $ 1-3 GP $ 5 AGE 6-9 TIME1 10-14 TIME2 15-19 TIME3 20-24;
+PROC PRINT; RUN;
+PROC MEANS DATA=MYDATA;
+RUN;
+
+* advanced infile statement;
+* DLM=',' separate by , if no space;
+* FIRSTOBS=2 line start;
+* PBS=26 #obs to record;
+DATA MYDATA;
+INFILE 'C:\Users\15758\Desktop\data3300\W1\example.csv' DLM=', '  FIRSTOBS=2 OBS=11;
+INPUT GROUP $ AGE TIME1 TIME2 TIME3 Time4 SOCIO;
+PROC PRINT DATA=MYDATA; RUN;
+
+DATA PLACES;
+INFILE DATALINES DLMSTR='!∼!';
+INPUT CITY $ STATE $ ZIP;
+DATALINES;
+DALLAS!∼!TEXAS!∼!75208
+LIHUE!∼!HI!∼!96766
+MALIBU!∼!CA!∼!90265
+;
+PROC PRINT;
+RUN;
+-----------------------------------------
+
+DATA TEST;
+INFILE "C:\Users\15758\Desktop\data3300\W1\dinfiledat.TXT" TRUNCOVER;
+INPUT LAST $1-21 FIRST $ 22-30 ID $ 31-36 ROLE $ 37-44;
+RUN;
+PROC PRINT DATA=TEST;RUN;
+* or
+DATA TEST;
+INFILE "C:\Users\15758\Desktop\data3300\W1\dinfiledat.TXT"  LRECL=44 PAD;
+INPUT LAST $1-21 FIRST $ 22-30 ID $ 31-36 ROLE $ 37-44;
+RUN;
+PROC PRINT DATA=TEST;RUN;
+
+* wrong code
+DATA TEST;
+INFILE "C:\Users\15758\Desktop\data3300\W1\dinfiledat.TXT";
+INPUT LAST $1-21 FIRST $ 22-30 ID $ 31-36 ROLE $ 37-44;
+RUN;
+PROC PRINT DATA=TEST;RUN;
+* wrong
+DATA TEST;
+INFILE "C:\Users\15758\Desktop\data3300\W1\dinfiledat.TXT"  MISSOVER;
+INPUT LAST $1-21 FIRST $ 22-30 ID $ 31-36 ROLE $ 37-44;
+RUN;
+PROC PRINT DATA=TEST;RUN;
+
+-----------------------------------------
+DATA "C:\Users\15758\Desktop\data3300\W1";
+INPUT ID $ 1-3 SBP 4-6 DBP 7-9 GENDER $ 10 AGE 11-12 WT 13-15;
+DATALINES;
+001120 80M15115
+002130 70F25180
+003140100M89170
+004120 80F30150
+005125 80F20110
+;
+RUN;
+PROC MEANS;
+RUN;
+
+-----------------------------------------
+* SAS data step
+* phase: compile execution output
+* input buffer to program data vector (PDV) to output
+DATA NEW; 
+INPUT ID $ AGE TEMPC;
+TEMPF=TEMPC*(9/5)+32;
+DATALINES;
+0001 24 37.3
+0002 35 38.2
+;
+run;
+proc print;run;
+
+_________________________________________
+/*text*/
+* input with title
+DATA EXAMPLE;
+INPUT AGE @@;
+DATALINES;
+12 11 12 12 9 11 8 8 7 11 12 14 9 10 7 13
+6 11 12 4 11 9 13 6 9 7 13 9 13 12 10 13
+11 8 11 15 12 14 10 10 13 13 10 8 12 7 13
+11 9 12
+;
+RUN;
+PROC PRINT DATA=RECOVERY;
+TITLE "HELLO WORLD, MY NAME IS your name.";
+RUN;
+PROC MEANS DATA=EXAMPLE;
+VAR AGE;
+RUN;
+
+DATA CHILDREN;
+* WT is in column 1-2, HEIGHT is in 4-5 and AGE is in 7-8;
+* Create an INPUT statement that will read in this data set;
+INPUT WT 1-2 HEIGHT 4-5 AGE 7-8;
+DATALINES;
+64 57 8
+71 59 10
+53 49 6
+67 62 11
+55 51 8
+58 50 8
+77 55 10
+57 48 9
+56 42 10
+51 42 6
+76 61 12
+68 57 9
+;
+Title "Exercise 2.1 - your name";
+PROC PRINT DATA=CHILDREN;
+RUN;
+
+DATA PEOPLE;
+INPUT ID $ 1-5 AGE 6-7 GENDER $8 MARRIED $9 WEIGHT_IN_POUNDS 10-12; * finish INPUT statement;
+DATALINES;
+0000123MY201
+0002143FY154
+0004333FN133
+0005429MN173
+0013249FY114
+;
+Title "Exercise 2.2 – your name";
+PROC PRINT DATA=PEOPLE;
+RUN;
+
+DATA BIRTHDATES;
+INPUT @1 ID $5. @6 GENDER $1. @7 MARRIED $1. @8 BDATE DATE9.; * finish INPUT statement;
+FORMAT BDATE WEEKDATE29.; * finish OUTPUT FORMAT statement;
+DATALINES;
+00001M112JAN1999
+00021F003MAR1989
+00043F018JUL1991
+00054M022DEC1998
+00132F110JUL1992
+;
+Title "Exercise 2.3 - your name";
+PROC PRINT DATA=BIRTHDATES;
+RUN;
+
+/*
+COMPILE (look at syntax) SAS reads the syntax of the SAS program to see if there are any errors in the
+code. If there are no errors found, SAS “compiles” this code – that is, it transforms the
+SAS code into a code used internally by SAS. (You don’t need to know this internal
+code.)
+EXECUTION (read data, calculate) If the code syntax checks out, SAS begins performing the tasks specified
+by the code. For example, the first line of code is DATA NEW, so during the execution
+phase, SAS creates a “blank” dataset (no data in it) named NEW that it will use to put
+the data into as it is read.
+OUTPUT (create data set) SAS reads in each data line. It interprets this line of data into the values for
+each variable and stores them into the data set one line at a time until all data have
+been output into the specified data set.
+More specifically, once SAS passes the compile phase, it creates an area of memory
+called the input buffer. This buffer is the location where the data values are first placed,
+before they are separated into values associated with a particular variable.
+SAS also creates another piece of memory called a Program Data Vector (PDV)
+The PDV contains the names of the variables specified in the INPUT statement, plus
+two temporary variables, _N_ and _ERROR_. The variable _N_ is the number of the
+data line being entered (set to 1 in this case for the first line) and _ERROR_ to indicate if
+an error in reading data has been encountered. It is initially set at 0 (which means no error
+detected.)
+Once all of the data for a line are read in, all of the calculations specified in the DATA
+step have been performed, and there are no errors detected, SAS outputs the PDV to the
+data set.
+*/
