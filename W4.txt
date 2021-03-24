@@ -210,3 +210,15 @@ QUIT;
 %MEND;
 
 %RET (STOCK=IBM, YEAR=1993, QTR=2); RUN;
+
+___________________________________________________________________
+* tute4;
+* Q1.which product have the highest andlowest prices in each month (17 products);
+* sashelp.pricedata;
+
+
+* Q2.return the annual return given stock name and year?;
+* sashelp.stocks;
+
+* Q3.randomly choose 500 F and 500 M, find difference in average blood pressure b.w 2 groups;
+* sashelp.heart, RANUNI to generate random values b/w 0 and 1, DO LOOP to redo 100 times;
