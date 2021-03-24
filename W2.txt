@@ -1,0 +1,88 @@
+LIBNAME ACX3300W2 'C:\Users\15758\Desktop\data3300\W2';
+___________________________________________________________________
+* rename variables;
+RENAME VAR1 = FA;
+* label variable - descriptive names making output more readable;
+LABEL VAR1 = 'LABEL for VAR1';
+
+DATA MYDATA;
+LABEL ID = 'Identification Number'
+	 SBP= 'Systolic Blood Pressure'
+	 DBP = 'Diastolic Blood Pressure'
+	 AGE = 'Age on Jan 1, 2000'
+	 WT = 'Weight'	 ;
+INPUT ID $ SBP DBP GENDER $ AGE WT;
+DATALINES;
+001 120 80 M 15 115
+002 130 70 F 25 180
+003 140 100 M 89 170
+004 120 80 F 30 150
+005 125 80 F 20 110
+;
+PROC MEANS; VAR SBP DBP AGE WT; Title 'model'; RUN;
+PROC PRINT; Title 'table'; RUN;
+-------------------------------------------------------------------
+/* functions
+C = MEASURE + SQRT(A**2 + B**2);
+S = MAX(x1,x2,x3,…); 	Maximum value in the list of arguments
+S = MIN(x1,x2,x3,…); 	Minimum value in the list of arguments
+S = SUM(x1,x2,x3,…); 	Sum of non-missing values in a list of arguments
+S = MEDIAN(x1,x2,x3,…); 	Median of a list of non-missing values
+S = ROUND(value, round); 	Rounds value to nearest round-off unit
+*/
+-------------------------------------------------------------------
+* if-then-else;
+
+ /* SAS condition operators
+= EQ
+^= ~= NE
+< LT
+<= LE
+> GT
+>= GE
+NUM IN (3,4,5)
+*/
+
+ /* SAS logical operators
+& AND
+| OR
+^ ~ NOT
+*/
+
+IF AGE >= 65 THEN RETIRE = 1 ; ELSE RETIRE = 0 ;
+IF MARK GE 80 THEN GRADE = “HD” ;
+	ELSE IF 70 <= MARK < 80 THEN GRADE = “D” ;
+	ELSE GRADE = “C” ;
+
+* missing values (no this line then for . SAS given zero);
+IF AGE = . THEN TEEN = .;
+
+___________________________________________________________________
+DATA CARS;  SET SASHELP.CARS;
+INVOICE1=ROUND(INVOICE/1000)*1000;
+IF LENGTH>200 THEN LONG=1; ELSE LONG=0;
+MPG=AVERAGE(MPG_CITY, MPG_HIGHWAY);
+PROC SORT DATA=CARS; BY INVOICE;
+IF FIRST.MAKE OR LAST.MAKE THEN OUTPUT;
+RUN;
+PROC SORT DATA+CARS; BY TYPE INVOICE;
+DATA CARS2; SET CARS; BY TYPE INVOICE;
+IF FIRST.TYPE oR LAST.TYPE THEN OUTPUT;
+
+PROC MEANS DATA=CARS; BY TYPE;
+VAR INVOICE;
+OUTPUT OUT=AVE MEAN=M_PRICE;
+RUN;
+
+DATA CARS3;
+PROC SQL;
+CREATE TABLE AVE AS
+SELECT DISTINCT TYPE, MEAN (INVOICE) AS AVE_P
+FROM CARS
+GROUP BY TYPE;
+
+CREATE TABLE CARS4 AS
+SELECT *, CASE WHEN A.INVOICE>B.AVE_P THEN 1 ELSE 0 END
+FROM CASE AS A, AVE AS B
+WHERE A.TYPE =B.TYPE
+QUIT;
