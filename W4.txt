@@ -1,0 +1,212 @@
+LIBNAME ACX3300W4 'C:\Users\15758\Desktop\data3300\W4';
+___________________________________________________________________
+/*A SAS macro variable is the symbolic name that stores information that can be used to dynamically modify SAS code through symbolic substitution.
+*/
+
+* use ampersand &;
+%LET macro_variable_name = text;
+
+%LET YEAR=2015;
+%LET DEPT=ENGINEERING;
+
+IND_DAY=MDY(7,4,&YEAR);
+/*GROUP="&DEPT" is seen by SAS as;
+GROUP="ENGINEERING";
+-------------------------------------------------------------------
+%LET PATH=C:\SASDATA\;
+%LET DSN=SOMEDATA;
+%LET CLASS=GP;
+%LET SELECTVAR=AGE TIME1-TIME4;
+
+PROC MEANS DATA="&PATH&DSN" MAXDEC=2;
+CLASS &CLASS ;
+VAR &SELECTVAR;
+RUN;
+-------------------------------------------------------------------
+%LET STATUS=PRE;
+"&STATUS. PRODUCTION" 
+___________________________________________________________________
+/*SAS Macros are a super powerful tool that allow us to 
+set aside repetitive sections of code, including both DATA steps and procedures, and to use them again and again when needed & create dynamic variables (macro variables) within the code that can take on specified values.
+*/
+
+%MACRO macroname <(parameter- list )>
+                 </options>;
+*Put SAS code here;
+%MEND macroname;
+-------------------------------------------------------------------
+%MACRO REPORT(SUBJ, DSN);
+   DATA REPORT;SET "&DSN";
+     IF SUBJ=&SUBJ;
+     TITLE "REPORT ON SUBJECT# &SUBJ";
+     PROC PRINT NOOBS DATA=REPORT;
+       VAR GENDER TIME EXPOSED DIAGNOSED;
+   RUN;
+%MEND REPORT;
+
+%REPORT(SUBJ=001, DSN=C:\SASDATA\SUBJECTS);
+
+DATA REPORT;SET "C:\SASDATA\SUBJECTS ";
+IF SUBJ=001;
+TITLE "REPORT ON SUBJECT# 001";
+PROC PRINT NOOBS DATA=REPORT;
+VAR GENDER TIME EXPOSED DIAGNOSED;
+RUN;
+-------------------------------------------------------------------
+%INCLUDE "C:\SASDATA\DMACRODISCLAIM.SAS";
+-------------------------------------------------------------------
+%do i = 1 %to 5;
+data gp&i;
+set mysaslib.somedata;
+where status=&i ;
+run;
+%end;
+
+-------------------------------------------------------------------
+OPTIONS MPRINT;
+OPTIONS ERROR=3;  * This tells SAS only to print same error message three times;
+
+-------------------------------------------------------------------
+sashelp.pricedata 
+/*
+The total number of units sold in a year
+The total revenue (in dollars) in a year
+PRODUCT, YEAR, TOTAL, REVENUE
+*/
+
+%MACRO PRODUCT (PRODUCT=, YEAR=);
+PROC SQL ;
+SELECT DISTINCT PRODUCT, YEAR(DATE) AS YEAR, SUM(SALE) AS TOTAL, SUM(SALE*PRICE) AS REVENUE
+FROM SASHELP.PRICEDATA
+WHERE PRODUCT=&PRODUCT AND YEAR(DATE)=&YEAR;
+QUIT;
+%MEND ;
+
+%PRODUCT (PRODUCT=5, YEAR=2000); RUN;
+%PRODUCT (PRODUCT=12, YEAR=1998); RUN; 
+___________________________________________________________________
+
+* lec4;
+* Q1;
+%LET TYPE="SUV"; *Sedan, Truck, Wagon, Sports, Hybrid;
+DATA ONE; SET SASHELP.CARS;
+WHERE TYPE=&TYPE; *WHERE TYPE="SUV";
+RUN;
+PROC MEANS DATA=ONE;
+VAR INVOICE;
+RUN;
+
+* USE PROC SQL;
+PROC SQL;
+SELECT MEAN(INVOICE) AS AVERAGE_PRICE
+FROM SASHELP>CARS
+WHERE TYPE=&TYPE;
+QUIT;
+
+
+/* Q2
+use dataser sashelp.pricedata
+create two macro variables for product and year
+use PROC SQL to find answers to the query about a particular product:
+The total number of units sold in a year
+The total revenue (in dollars) in a year
+one enters the product number and the year, the code should output the following info:
+product, year, total,revenue
+*/
+
+PROC SQL;
+SELECT DISTINCT PRODUCT, YEAR(DATE) AS Y, SUM(SALE) AS TOTAL, SUM(SAKE*PRICE) AS REVENUE
+FROM SASHELP.PRICEDATA
+WHERE PRODUCT =1 AND YEAR(DATE)=1998;
+QUIT;
+
+
+%MACRO PRODUCT (PRODUCT=, YEAR=);
+PROC SQL ;
+SELECT DISTINCT PRODUCT, YEAR(DATE) AS YEAR, SUM(SALE) AS TOTAL, SUM(SALE*PRICE) AS REVENUE
+FROM SASHELP.PRICEDATA
+WHERE PRODUCT=&PRODUCT AND YEAR(DATE)=&YEAR;
+QUIT;
+%MEND ;
+
+-------------------------------------------------------------------
+* prac quiz1;
+* Q1.how many vehicles are longer than 200? ;
+DATA CARS; SET SASHELP.CARS;
+WHERE LENGTH>200;
+* IF LENGTH>200;
+RUN;
+
+PROC SQL;
+SELECT COUNT(MODEL) AS N
+FROM SASHELP.CARS
+WHERE LENGTH>200;
+QUIT;
+
+
+* Q2.how many difference car markets (make) are there in the data? ;
+PROC SQL;
+SELECT COUNT(DISTINCT MAKE)
+FROM SASHELP.CARS;
+QUIT;
+
+* Q3.what is the average horsepower of SUVs? ;
+PROC SQL;
+SELECT DISTINCT TYPE, MEAN(HORSEPOWER) AS AVERAGE_POWER
+FROM SASHELP.CARS
+WHERE TYPE="SUV";
+QUIT;
+
+* Q4.total GNP in each of the 10-year period starting from 1960;
+* total GNP during 1980-1989;
+DATA GNP; SET SASHELP.GNP;
+PD=FLOOR((YEAR(DATE)-1900)/10);
+PD1=SUBSTR(PUT(YEAR(DATE),$4.),3,1);
+RUN;
+PROC SORT DATA=GNP; BY PD DATE; RUN;
+
+DATA GNP1; SET GNP; BY PD DATE;
+IF FIRST.PD THEN SUM=0;
+RETAIN SUM;
+SUM=SUM+GNP;
+IF LAST.PD THEN OUTPUT;
+RUN;
+
+PROC PRINT DATA=GNP1; WHERE YEAR(DATE)=1989;
+RUN;
+
+* Q5 Stock, Year, Qtr to return quarterly stock returns, given stock name year and quarter;
+* quarterly return of IBM in 1993 Quarter 2?;
+
+DATA STOCKS; SET SASHELP.STOCKS; BY STOCK DESCENDING DATE;
+YEAR=YEAR(DATE);
+QTR=QTR(DATE);
+RET=LAG(ADJCLOSE)/ADJCLOSE-1;
+IF FIRST.STOCK THEN RET=. ;
+RUN;
+
+PROC SQL;
+SELECT DISTINCT STOCK, YEAR, QTR, EXP(SUM(LOG(1+RET)))-1 AS RETURN
+FROM STOCKS
+WHERE STOCK="IBM" AND YEAR(DATE)=1993 AND QTR(DATE)=2
+GROUP BY STOCK, YEAR;
+QUIT;
+
+-------------------------------------------------------------------
+%MACRO RET (STOCK=, YEAR=, QTR=);
+DATA STOCKS; SET SASHELP.STOCKS; BY STOCK DESCENDING DATE;
+YEAR=YEAR(DATE);
+QTR=QTR(DATE);
+RET=LAG(ADJCLOSE)/ADJCLOSE-1;
+IF FIRST.STOCK THEN RET=. ;
+RUN;
+
+PROC SQL;
+SELECT DISTINCT STOCK, YEAR, QTR, EXP(SUM(LOG(1+RET)))-1 AS RETURN
+FROM STOCKS
+WHERE STOCK="&STOCK." AND YEAR(DATE)=&YEAR AND QTR(DATE)=&QTR
+GROUP BY STOCK, YEAR;
+QUIT;
+%MEND;
+
+%RET (STOCK=IBM, YEAR=1993, QTR=2); RUN;
