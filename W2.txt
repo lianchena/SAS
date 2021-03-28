@@ -57,6 +57,293 @@ IF MARK GE 80 THEN GRADE = “HD” ;
 * missing values (no this line then for . SAS given zero);
 IF AGE = . THEN TEEN = .;
 
+* if-then-do, execute a number of commands;
+IF AGE GT 19 THEN DO;
+   BMI=(WTLBS/HTINCH**2)*703;
+   ISADULT=1;
+   INCLUDEINSTUDY=”Yes”;
+END;
+-------------------------------------------------------------------
+* keep and drop;
+
+DATA ONE ; SET ORIGINAL ;
+KEEP VAR1 VAR2 VAR3 ;
+* DROP VAR9 ; 
+RUN ;
+
+* be prosecuted more efficiently (in less time);
+DATA TWO ; SET ORIGINAL (KEEP = VAR1 VAR2 VAR3) ; 
+RUN ;
+
+-------------------------------------------------------------------
+* SET to enter and modify an existing dataset;
+* NEW data set is identical to OLD;
+* You can now modify NEW without changing the original data set;
+DATA NEW; SET OLD;
+Or 
+DATA NEW; SET “C:\SASDATA\OLD”;
+
+* dividing data;
+DATA YOUNG OLD; SET ALL ;
+IF AGE GE 65 THEN OUTPUT OLD ;
+ELSE OUTPUT YOUNG ;
+RUN ;
+
+* combining or appending data;
+DATA NEW; SET OLD1 OLD2 OLD3 ; RUN;
+-------------------------------------------------------------------
+* create a dataset that is identical to sashelp.cars;
+DATA CARS; SET SASHELP.CARS; RUN;
+
+* Create two datasets that only have one type of cars: SUV or SEDAN;
+DATA SUV SEDAN; SET SASHELP.CARS; 
+IF TYPE="SUV" THEN OUTPUT SUV;
+ELSE IF TYPE="Sedan" THEN OUTPUT SEDAN;
+RUN;
+-------------------------------------------------------------------
+* SAS procedures for statistical analyses;
+/*
+PROC SORT
+PROC PRINT
+PROC SQL
+PROC MEANS
+PROC UNIVARIATE
+PROC REG
+PROC LOGIT
+*/
+-------------------------------------------------------------------
+* PROC SORT;
+/* sorts the MYDATA data set by VAR1 and puts the resulting data set into a new dataset named MYSORT. The original data set is NOT CHANGED */
+PROC SORT DATA=MYDATA OUT=MYSORT; 
+BY VAR1; 
+
+/*DESCENDING option tells SAS to sort by the descending order*/
+PROC SORT DATA=MYDATA OUT=S2; 
+BY DESCENDING VAR1;
+
+PROC SORT DATA="C:\SASDATA\SOMEDATA"
+OUT=ANALYSIS
+(KEEP=ID GP AGE GENDER RENAME=(ID=SUBJECT AGE=DXAGE)); 
+BY ID; 
+
+/*NODUPKEY option tells SAS to keep only one observation for each combination of sorting variables*/
+PROC SORT DATA=COMPANIES OUT=S2 NODUPKEY; 
+BY INDUSTRY COMPANY_ID YEAR;
+
+/*NODUP which removes duplicated observations*/
+PROC SORT DATA=COMPANIES OUT=S2 NODUP; 
+BY INDUSTRY COMPANY_ID YEAR;
+-------------------------------------------------------------------
+* find the first and last values using FIRST.GROUP and LAST.GROUP;
+* find the most expensive and the cheapest car for each brand;
+PROC SORT DATA=SASHELP.CARS OUT=CARS;
+BY MAKE INVOICE;
+DATA EXP CHEAP;
+SET CARS(KEEP=MAKE MODEL INVOICE);
+BY MAKE INVOICE;
+IF FIRST.MAKE THEN OUTPUT CHEAP;
+IF LAST.MAKE THEN OUTPUT EXP;
+PROC PRINT DATA=EXP; RUN;
+PROC PRINT DATA=CHEAP; RUN;
+
+* Within each type of cars, which ones have the highest invoice prices;
+PROC SORT DATA=SASHELP.CARS OUT=CARS;
+BY TYPE INVOICE;
+DATA EXP;
+SET CARS;
+BY TYPE INVOICE;
+IF LAST.TYPE THEN OUTPUT;
+PROC PRINT; RUN;
+-------------------------------------------------------------------
+* PROC STATEMENT SYNTAX;
+/*
+VAR variables;          variables to use
+BY variables;             repeat procedure for each different variable
+ID variables;              use specified variables as observation identifier
+LABEL var='label';     assign descriptive label
+WHERE condition;     condition criteria
+*/
+
+* The VAR statement tells SAS which variables to print;
+PROC PRINT DATA=MYDATA;
+VAR ID GROUP V1 V2 ;
+RUN;
+* List a range of variables  with consecutive numeric suffixes;
+VAR Q1 – Q50 ;
+* List a range of variables b/w colomns: without consecutive suffixes;
+VAR ID -- TIME4; 
+
+* BY is used first to SORT, then to request analysis by group;
+PROC MEANS DATA=CARS MAXDEC=2;
+BY MAKE;
+VAR INVOICE ;
+RUN;
+
+* WHERE statement tells SAS to only look for all-wheel drive SUVs;
+PROC MEANS DATA=CARS MAXDEC=2;
+WHERE TYPE ="SUV" AND DRIVETRAIN="ALL";
+VAR INVOICE ;
+RUN;
+
+-------------------------------------------------------------------
+* PROC PRINT;
+/*
+DOUBLE	       Double-spaces the output for ODS output formats
+LABEL             Instructs SAS to use variable labels as column headings
+N <= 'label'> Includes the number of observations in the listing and
+                      optionally specifies a label
+OBS='label'    Specifies a label for the Obs column
+NOBS             Suppresses the output column that identifies observations by number
+ROUND          Rounds numbers to two decimal places unless they are otherwise formatted
+SPLIT='char'   Defines a split character that is used to split label names for column headings.
+(FIRSTOBS=n1
+OBS=n2)
+Causes PROC PRINT to only use selected records in a data set from n1 as specified by FIRSTOBS= to the n2 as specified by OBS=
+*/
+
+* SUM statement specifies that a sum of the values for the variables listed is to be reported;
+SUM COST;
+
+PROC PRINT DATA = CARS (OBS = 20) ;
+VAR MAKE MODEL INVOICE ;
+WHERE TYPE ="SUV" ;
+TITLE "INVOICE PRICES OF SUV" ;
+SUM INVOICE ;
+RUN ;
+-------------------------------------------------------------------
+* vertical merge (rows) - Appending adds new records to an existing data set;
+* OLD1(V123) OLD2(V123);
+
+* horizontal merge (columns) - Merging adds variables to a data set through the;
+* use of a key identifier that is present in both data sets (usually an identification code;
+* OLD1(V123) OLD2(V456);
+* Unmatching observations will result in missing values;
+
+* 1 SORT each data set BY the key identifier;
+* 2 Then perform the merge – by the SAME key identifier;
+PROC SORT DATA=PRE; BY ID;
+PROC SORT DATA=POST; BY ID;
+DATA PREPOST; 
+MERGE PRE POST; BY ID; 
+RUN;
+
+DATA SALES ;
+INPUT ID $ YEAR SALES ;
+DATALINES;
+A	1	100
+A	2	150
+A	3	200
+B	1	200
+B	2	300
+B	3	400
+C	1	123
+C	2	234
+C	3	345
+;
+RUN ;
+DATA EMPLOYEES ;
+INPUT ID $ YEAR EMPLOYEES ;
+DATALINES ;
+A	2	5
+B	1	20
+B	2	25
+B	3	30
+C	1	5
+C	2	8
+C	3	10
+C	4	15
+;
+RUN ;
+PROC SORT DATA = SALES ; BY ID YEAR ;
+PROC SORT DATA = EMPLOYEES ; BY ID YEAR ;
+DATA NEW ; MERGE SALES EMPLOYEES ;
+BY ID YEAR ;
+PROC PRINT ;
+RUN ;
+
+* If you just want to matched observations;
+DATA NEW ; MERGE SALES (IN=A) EMPLOYEES (IN=B); BY ID YEAR ;
+IF A AND B; * only keep matched obs;
+*IF A ; * Keep all the obs in SALES and only matched obs in EMPLOYEES ;
+RUN ;
+
+/*
+always print at least 20 rows
+check identification unique & # of observations
+*/
+
+-------------------------------------------------------------------
+* PROC SQL;
+/* processes
+7 CREATE TABLE: create anew table/dataset
+5 SELECT: select variables from original datasets
+1 FROM: original datasets
+2 WHERE: set conditions, can only use variables in the existing dataset, 
+              not using variables in SELECT statement in WHERE statement
+3 GROUP BY: form groups
+4 HAVING: set group conditions, not on original data in FROM statement
+6 ORDER BY: set the order of the output data
+*/
+
+PROC SQL ;
+CREATE TABLE NEW AS
+SELECT Variables
+FROM Datasets
+WHERE 
+GROUP BY
+HAVING 
+ORDER BY;
+QUIT ;
+-------------------------------------------------------------------
+* calculate the price discount for cars;
+DATA CARS; SET SASHELP.CARS; RUN;
+PROC SQL ;
+SELECT MAKE, MODEL, TYPE, (MSRP – INVOICE) AS DISCOUNT
+FROM CARS
+WHERE TYPE ="SUV";
+QUIT ;
+PROC PRINT; RUN;
+
+* CALCULATED – the sorting variable is not in the original dataset but calculated in the procedure;
+PROC SQL ;
+CREATE TABLE NEW AS
+SELECT MAKE, COUNT(MODEL) AS MODELS, MEAN (MSRP – INVOICE) AS AVERAGE_DISCOUNT
+FROM CARS
+GROUP BY MAKE
+ORDER BY CALCULATED AVERAGE_DISCOUNT;
+QUIT ;
+PROC PRINT ; RUN ;
+-------------------------------------------------------------------
+* merge datasets;
+* inner  join: ();
+PROC SQL ;
+SELECT *
+FROM SALES AS A, EMPLOYEES AS B
+WHERE A.ID = B.ID AND A.YEAR = B.YEAR ;
+QUIT ;
+
+* outer  join: left O ;
+* Use ON instead of WHERE if you use JOIN
+PROC SQL ;
+SELECT A.ID, A.YEAR, A.SALES, B.EMPLOYEES
+FROM SALES AS A LEFT JOIN EMPLOYEES AS B
+ON A.ID = B.ID AND A.YEAR = B.YEAR ;
+QUIT ;
+
+* outer  join: full OO ;
+* outer  join: right O ;
+
+* Reflective Join (Self-Join);
+PROC SQL ;
+SELECT A.*, B.SALES_Y1
+FROM SALES AS A LEFT JOIN SALES (RENAME=SALES=SALES_Y1) AS B
+ON A.ID = B.ID AND B.YEAR=1 ;
+QUIT ;
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+-------------------------------------------------------------------
 ___________________________________________________________________
 DATA CARS;  SET SASHELP.CARS;
 INVOICE1=ROUND(INVOICE/1000)*1000;
