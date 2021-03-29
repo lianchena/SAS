@@ -74,7 +74,6 @@ RUN ;
 * be prosecuted more efficiently (in less time);
 DATA TWO ; SET ORIGINAL (KEEP = VAR1 VAR2 VAR3) ; 
 RUN ;
-
 -------------------------------------------------------------------
 * SET to enter and modify an existing dataset;
 * NEW data set is identical to OLD;
@@ -184,7 +183,6 @@ PROC MEANS DATA=CARS MAXDEC=2;
 WHERE TYPE ="SUV" AND DRIVETRAIN="ALL";
 VAR INVOICE ;
 RUN;
-
 -------------------------------------------------------------------
 * PROC PRINT;
 /*
@@ -271,7 +269,6 @@ RUN ;
 always print at least 20 rows
 check identification unique & # of observations
 */
-
 -------------------------------------------------------------------
 * PROC SQL;
 /* processes
@@ -341,7 +338,6 @@ ON A.ID = B.ID AND B.YEAR=1 ;
 QUIT ;
 ___________________________________________________________________
 * tutorial;
-
 * CREATE VARIABLES;
 * Round the invoice prices to the nearest thousands;
 * Create an indicator variable LONG= 1 if length is longer than 200. Label the variable.;
@@ -502,5 +498,4 @@ SELECT DISTINCT MAKE, MEAN(MPG_CITY) AS AVGCITYMPG
 FROM SASHELP.CARS
 GROUP BY MAKE;
 QUIT;
-
 /* correct answer for %scoreit(SQL01): AvgCityMPG for MAKE=MINI is 26.5*/
