@@ -1,1 +1,439 @@
 LIBNAME ACX3300 'C:\Users\15758\Desktop\data3300\W3';
+_________________________________________
+* SAS Functions;
+* Arithmetic/Mathematical;
+/*
+ABS(X)            ABS(-9)=9
+EXP(X)            EXP(1)=e=2.71828
+LOG(X)            LOGe(10)=2.30259
+LOG10(X)        LOG10(10)=1
+FACT(X)           FACT(7)=7x6x5x4x3x2x1=5040
+MAX(X)
+MEAN(X)
+MEDIAN(X)
+MIN(X)
+MOD(X,K)        remainder x/k, MOD(5,3)=2, MOD(6,2)=0
+N(x1,x2,x3...)    # of non-missing values, N(1,2,.,4)=3
+NMISS(x1,x2,x3...)    # of missing values, N(1,2,.,4)=1
+ORDINAL(k,x1,x2,x3...)  find kth num in sorted list ORDINAL(1,11,6,9,3)=3
+RANUNI(0)      random number
+RANUNI(X)      uniform/same random number
+RANNOR(seed) random number from normal distribution with mean 0 sd 1
+SIGN(X)           return sign of X as 1 or -1
+SQRT(X)           SQRT(9)=3
+SUM(X)            SUM(x1,x2,x3)  SUM(OF x1-x3) ignore missing value
+                         SUM(x1-x3)  keep missing value=.
+*/
+/*
+ROUND (3.1415, .01) *Returns the value 3.14;
+ROUND(107,5) * Returns the value 105;
+ROUND(3.6234)* Returns the value 4 (rounds to integer);
+
+                       -3.5  -2.9  -1.1  1.1  2.9  3.5
+ROUND          -4     -3     -1     1     3     4
+CEIL                -3     -2     -1     2     3     4
+FLOUR            -4     -3     -2     1     2     3      
+INT                 -3      -2     -1    1     2     3
+INT+SIGN      -4       -3    -2     2     3    4
+*/
+-----------------------------------------
+* Date and Time;
+DATA DATE ; 
+DATE = MDY(03, 16, 2021);
+YEAR = YEAR(DATE) ;
+MONTH = MONTH(DATE);
+DAY = DAY(DATE);
+QUARTER = QTR(DATE);
+WEEK = WEEK(DATE) ;
+WEEKDAY = WEEKDAY(DATE);
+PROC PRINT ; RUN ;
+
+* dates interval;
+DATA DATES;
+INPUT @1 BDATE MMDDYY8.;
+TARGET=TODAY(); 
+AGE=INTCK('YEAR',BDATE,TARGET); 
+DATALINES;
+07101952
+07041776
+01011900
+;
+PROC PRINT DATA=DATES;
+FORMAT BDATE WEEKDATE. TARGET DATE9.;
+RUN;
+
+/*vaccines are available today and everyday 25,000 people can get vaccinated. By the end of the year 2021, how many people will be vaccinated*/
+DATA ONE;
+PEOPLE = INTCK("DAY",TODAY(), MDY(12,31,2021))*25000;
+RUN;
+PROC PRINT; RUN;
+-----------------------------------------
+* Character;
+/*
+UPCASE		makes all the letters upper case
+LOWCASE	makes all the letters lower case
+TRIM 		removes trailing blanks
+STRIP		removes all the leading and trailing blanks
+LEFT		left aligns a character string
+RIGHT		right aligns a character string
+CHAR		returns the character in a specific position of a string
+CAT		Connects character variables
+*/
+
+* SUBSTR;
+DATA STRING ; A ="ABCDEFG";
+B=SUBSTR(A, 2, 3);
+PROC PRINT; RUN ;
+/*B="BCD"*/
+DATA STRING ; A ="ABCDEFG";
+SUBSTR(A, 1, 3)="123";
+PROC PRINT; RUN ;
+/*A="123DEFG"*/
+-----------------------------------------
+* Access Previous Observations (Lags);
+/*RET=(PRICE in day t – PRICE in day t-1)/Price in day t-1 = Pt/Pt-1 – 1*/
+PROC SORT DATA=SASHELP.STOCKS OUT=STOCKS; BY STOCK DESCENDING DATE ; 
+DATA STOCKS1; SET STOCKS ; BY STOCK DESCENDING DATE ;
+NEXT_P=LAG(ADJCLOSE);
+RET=LAG(ADJCLOSE)/ADJCLOSE – 1 ;
+IF FIRST.STOCK THEN DO ;
+NEXT_P=. ; RET= . ; 
+END ;
+RUN ;
+DATA CHECK; SET STOCKS1; BY STOCK DESCENDING DATE ;
+IF FIRST.STOCK ; 
+PROC PRINT ; RUN ;
+
+* Calculate the stock returns in each year;
+DATA STOCKS; SET SASHELP.STOCKS (KEEP=DATE STOCK ADJCLOSE);
+WHERE MONTH(DATE)=1;
+YEAR=YEAR(DATE);
+PROC SORT DATA=STOCKS; BY STOCK DESCENDING DATE; RUN;
+DATA STOCKS1; SET STOCKS; BY STOCK DESCENDING DATE;
+NEXT_P=LAG(ADJCLOSE);
+RET=LAG(ADJCLOSE)/ADJCLOSE-1;
+IF FIRST.STOCK THEN DO;
+NEXT_P=.; RET=.;
+END;
+RUN;
+PROC PRINT DATA=STOCKS1(OBS=20); RUN;
+
+* Calculate the stock returns for the period from 1990 - 2005;
+DATA STOCKS2; SET SASHELP.STOCKS (KEEP=DATE STOCK ADJCLOSE);
+WHERE MONTH(DATE)=1 AND YEAR(DATE) IN (1990,2005);
+PROC SORT DATA=STOCKS2; BY STOCK DESCENDING DATE; RUN;
+DATA STOCKS3; SET STOCKS2; BY STOCK DESCENDING DATE;
+NEXT_P=LAG(ADJCLOSE);
+RET=LAG(ADJCLOSE)/ADJCLOSE-1;
+IF FIRST.STOCK THEN DO;
+NEXT_P=.; RET=.;
+END;
+RUN;
+PROC PRINT DATA=STOCKS3(OBS=20); RUN;
+
+* Which company has the highest stock returns in the period from 2000 -2005;
+
+/*
+not easy to find uniform begin and end date - earnings announcement
+1 select dataset containing daily/weekly/monthly returns during period 
+P1-P4; RET1=P2/P1-1, RET2=P3/P2-1, RET3=P4/P3-1 
+total returns = P4/P1-1
+2 take log of (RET+1) then sum up
+log(RET1+1)=log(P2/P1)=log(P2)-log(P1)
+SUM=sum(log[(RET1-3) +1])=log(P4/P1)
+3 EXP function to transform log returns into raw return
+EXP(SUM)=P4/P1
+*/
+PROC SORT DATA=SASHELP.STOCKS OUT=STOCKS; BY STOCK DESCENDING DATE;
+DATA STOCKS1; SET STOCKS; BY STOCK DESCENDING DATE;
+RET=LAG(ADJCLOSE)/ADJCLOSE-1;
+IF FIRST.STOCK THEN RET=.;
+YEAR=YEAR(DATE);
+RUN;
+PROC SQL;
+CREATE TABLE STOCKS2 AS
+SELECT DISTINCT STOCK, YEAR, EXP(SUM(LOG(1+RET)))-1AS RET, COUNT(RET) AS MONTHS
+FROM STOCKS1
+GROUP BY STOCK, YEAR;
+QUIT;
+PROC PRINT DATA=STOCKS2(OBS=20); RUN;
+_________________________________________
+* SAS ARRAY - simplified;
+/*
+ARRAY TIME(1:6) A B C D E F ; * creates six variables TIME(1)=A, TIME(2)=B, etc ;
+ARRAY NUM(5) 1, 2, 3, 4, 5;  * creates five variables NUM(1)=1, NUM(2)=2, etc;
+ARRAY A (*) $ Q1-Q50; * create a number of variables A(1)=Q1, A(2)=Q2, etc;
+ARRAY CUPSIZE [*] CUP1-CUP4 (8,16,24,32); create a set of variables CUPSIZE(1)=CUP1=8, CUPSIZE(2)=CUP2=16, etc;
+ARRAY SIC(100) 1-100;  * creates 100 variables SIC(1)=1, SIC(2)=2, etc;
+*/
+DATA A;
+FORMAT ONE TWO THREE FOUR $10.;
+INPUT ONE $ TWO $ THREE $ FOUR $;
+DATALINES;
+APPLE ORANGE PINEAPPLE APRICOT
+LEMON APPLE KIWI STRAWBERRY
+;
+RUN;
+DATA B; SET A;
+ARRAY FRUIT(4) ONE TWO THREE FOUR;
+IF "ORANGE" IN FRUIT THEN ISORANGE=1;ELSE ISORANGE=0;
+PROC PRINT DATA=B;
+RUN;
+
+* vs complex code;
+DATA B; SET A;
+IF "ORANGE" IN ONE THEN ISORANGE=1;
+ELSE IF "ORANGE" IN TWO THEN ISORANGE=1;
+ELSE IF "ORANGE" IN THREE THEN ISORANGE=1;
+ELSE IF "ORANGE" IN FOUR THEN ISORANGE=1;
+ELSE ISORANGE=0;
+RUN;
+-----------------------------------------
+* DO LOOP;
+/*
+IF and DO: Use a DO in an IF statement to cause a group of statements to be conditionally executed.
+Iterative DO loop: Iterate through a series of statements based on some incremental index.
+DO UNTIL: Execute a group of statements until some condition is met.
+DO WHILE: Execute a group of statements as long as specified condition is true.
+*/
+
+* Iterative DO loop;
+SUM=0;
+DO K=1 to 4;
+SUM=SUM + K;
+END; 
+
+* DO UNTIL, put the condition to stop the iterations ;
+K=1
+SUM=0;
+DO UNTIL (K GT 4);
+SUM=SUM+K;
+K+1 ;
+END;
+
+* DO WHILE, the loop continues until the condition is no longer true;
+K=l;
+SUM=0;
+DO WHILE(K LT 5);
+SUM=SUM+K;
+K+l;
+END;
+
+* DO LOOP + ARRAYS;
+/* if any of these readings is above 140, you want to classify the subject with the value HIGHBP=1, or else the subject will have the value HIGHBP=0*/
+DATA PRESSURE;SET MEDDATA;
+ARRAY SBP(5) READINGl-READING5;
+HIGHBP=0;
+DO I=l TO 5;
+IF SBP(I) GT 140 THEN HIGHBP=l;
+END;
+
+/* If any of the prices is higher than the unit price (Price) then we define HIGHPRICE=1, otherwise HIGHPRICE=0
+What if we don’t know how the number of products/prices*/
+DATA PRICE;SET SASHELP.PRICEDATA;
+TOTAL=0;
+ARRAY P(*) DISCOUNT--PRICE17;
+DO I= LBOUND(P) to HBOUND(P);
+TOTAL=SUM(of TOTAL,P(i));
+END;
+DROP I;
+RUN;
+-----------------------------------------
+* RETAIN statement;
+* initial value of 1;
+RETAIN SCORE 1;
+* initial value of NONE & initial values of 0;
+RETAIN CATEGORY "NONE" TIME1-TIME10 0;
+* set the values of a list;
+RETAIN TIME1-TIME4 (1 2 3 4);
+RETAIN TIME1-TIME4 (1, 2, 3, 4);
+RETAIN TIME1-TIME4 (1:4);
+
+* calculate the values from the first observation to current observation;
+DATA DAYS;SET MYDATA;
+IF _N_=1 THEN FIRST=VISIT_DATE;
+RETAIN FIRST;
+DAYS=VISIT_DATE-FIRST;
+RUN;
+
+* accumulate TOTAL, and to find the MAX value;
+DATA ONE;
+INPUT DAY SALES;
+DATALINES;
+1 23.40
+2 32.50
+ …
+;
+RUN;
+DATA TWO; SET ONE;
+IF _N_=1 THEN TOTAL=0; 
+RETAIN TOTAL MAX;
+TOTAL=SALES+TOTAL;
+IF SALES>MAX then MAX=SALES;
+RUN;
+
+* Using dataset SASHELP.PRICEDATA to find;
+* The total unit sales in each year for each product;
+* The highest unit price in each year for each product;
+* The total revenue in each year for each product;
+DATA PRICE; SET SASHELP.PRICEDATA;
+YEAR=YEAR(DATE);
+KEEP PRODUCT YEAR DATE PRICE SALE;
+RUN;
+PROC SORT DATA=PRICE; BY PRODUCT YEAR DATE;
+DATA PRICE1; SET PRICE; BY PRODUCT YEAR DATE;
+IF FIRST.YEAR THEN DO;
+TOTAL=0; REVENUE=0;
+END; 
+RETAIN TOTAL REVENUE MAX;
+TOTAL=TOTAL+SALE;
+REVENUE=REVENUE+SALE*PRICE;
+IF PRICE>MAX THEN MAX=PRICE;
+IF LAST.YEAR;
+PROC PRINT DATA=PRICE1(OBS=20); RUN ;
+_________________________________________
+* MACRO;
+%LET YEAR=2015;
+IND_DAY=MDY(7,4,&YEAR);
+%LET DEPT=ENGINEERING;
+GROUP = "&DEPT"; 
+
+* combine macro variables;
+%LET PATH=C:\SASDATA\;
+%LET DSN=SOMEDATA;
+%LET CLASS=GP;
+%LET SELECTVAR=AGE TIME1-TIME4;
+PROC MEANS DATA="&PATH&DSN" MAXDEC=2;
+CLASS &CLASS ;
+VAR &SELECTVAR;
+RUN;
+
+* ambiguity;
+%LET STATUS=PRE;
+&STATUS. PRODUCTION;
+-----------------------------------------
+* SAS MACRO;
+%MACRO REPORT(SUBJ, DSN);
+DATA REPORT;SET "&DSN";
+IF SUBJ=&SUBJ;
+TITLE "REPORT ON SUBJECT# &SUBJ";
+PROC PRINT NOOBS DATA=REPORT;
+VAR GENDER TIME EXPOSED DIAGNOSED;
+RUN;
+%MEND REPORT;
+%REPORT(SUBJ=001, DSN=C:\SASDATA\SUBJECTS);
+
+* macro available for use in a program;
+%INCLUDE "C:\SASDATA\DMACRODISCLAIM.SAS";
+
+* %DO LOOP
+%do i = 1 %to 5;
+data gp&i;
+set mysaslib.somedata;
+where status=&i ;
+run;
+%end;
+
+* dataset sashelp.pricedata;
+* The total number of units sold in a year, The total revenue (in dollars) in a year;
+* when one enters the product number and the year;
+* the code should output the following information: PRODUCT, YEAR, TOTAL, REVENUE;
+%MACRO PRODUCT (PRODUCT=, YEAR=);
+PROC SQL ;
+SELECT DISTINCT PRODUCT, YEAR(DATE) AS YEAR, SUM(SALE) AS TOTAL, SUM(SALE*PRICE) AS REVENUE
+FROM SASHELP.PRICEDATA
+WHERE PRODUCT=&PRODUCT AND YEAR(DATE)=&YEAR;
+QUIT;
+%MEND ;
+%PRODUCT (PRODUCT=5, YEAR=2000); RUN;
+%PRODUCT (PRODUCT=12, YEAR=1998); RUN; 
+_________________________________________
+* tutorial;
+* Calculate the stock returns in the 12 month period from July to June;
+DATA STOCKS; SET SASHELP.STOCKS (KEEP=STOCK DATE ADJCLOSE); BY STOCK;
+RET=LAG(ADJCLOSE)/ADJCLOSE-1 ;
+IF FIRST.STOCK THEN RET=.;
+IF MONTH(DATE)<7 THEN YEAR=YEAR(DATE)-1;
+ELSE YEAR=YEAR(DATE);
+RUN;
+PROC SQL;
+CREATE TABLE STOCKS1 AS 
+SELECT STOCK, YEAR, EXP(SUM(LOG(1+RET)))-1 AS ARET, COUNT(RET) AS N_MONTHS
+FROM STOCKS
+GROUP BY STOCK, YEAR;
+QUIT;
+
+/*Calculate the stock returns in the three months 
+after the earnings announcements. That is, for IBM, stock returns in March - May. Then calculate the average 
+post-announcement returns across the years. */
+DATA STOCKS2; SET STOCKS;
+IF STOCK="IBM" AND MONTH(DATE) IN (3,4,5) THEN POST=1;
+ELSE IF STOCK="Intel" AND MONTH(DATE) IN (5,6,7) THEN POST=1;
+ELSE IF STOCK="Microsoft" AND MONTH(DATE) IN (9,10,11) THEN POST=1;
+ELSE POST=0;
+IF POST=1 THEN OUTPUT;
+RUN;
+
+PROC SQL;
+CREATE TABLE STOCKS3 AS 
+SELECT STOCK, YEAR, EXP(SUM(LOG(1+RET)))-1 AS RET_POST
+FROM STOCKS2
+GROUP BY STOCK, YEAR;
+
+SELECT STOCK, MEAN(RET_POST) AS RET_POST
+FROM STOCKS3
+GROUP BY STOCK;
+QUIT;
+-----------------------------------------
+* SASHELP.STOCKS to find out;
+* The total trading volume in each year for each stock;
+* The highest price in each year for each stock;
+* The lowest price in each year for each stock;
+DATA STK; SET SASHELP.STOCKS (KEEP=STOCK DATE LOW HIGH VOLUME);
+YEAR=YEAR(DATE);
+PROC SORT DATA=STK;  BY STOCK YEAR DATE; RUN;
+DATA STK1; SET STK; BY STOCK YEAR DATE;
+IF FIRST.YEAR THEN DO;
+VOL=0; HIGHEST=HIGH; LOWEST=LOW;
+END;
+RETAIN VOL HIGHEST LOWEST;
+VOL=VOL+VOLUME;
+IF HIGH>HIGHEST THEN HIGHEST=HIGH;
+IF LOW<LOWEST THEN LOWEST=LOW;
+*IF LAST.YEAR THEN OUTPUT;
+*KEEP STOCK YEAR VOL HIGHEST LOWEST;
+RUN;
+PROC PRINT;RUN;
+-----------------------------------------
+* sashelp.pricedata to answer the following questions;
+* Create an array for product unit price (Price1 – Price17) ;
+* Find the highest and the lowest product unit prices in each month;
+DATA PRICE; SET SASHELP.PRICEDATA;
+HIGH=PRICE1; LOW=PRICE1;
+ARRAY P(*) PRICE1 - PRICE17;
+DO K=1 TO HBOUND(P);
+IF P(K)> HIGH THEN HIGH=P(K);
+IF P(K)< LOW THEN LOW=P(K);
+END;
+RUN;
+PROC PRINT;RUN;
+-----------------------------------------
+* work.ACT01 using sashelp.pricedata as input;
+* array to increase values of price1 theough price17 by 10%;
+DATA PRICE; SET SASHELP.PRICEDATA;
+ARRAY P(*) PRICE1 - PRICE17;
+DO K=1 TO HBOUND(P);
+P(K) = P(K)*1.1;
+END;
+RUN;
+
+* TRY THIS IF YOU WANT TO KEEP THE OLD PRICE VARIABLES;
+DATA PRICE; SET SASHELP.PRICEDATA;
+ARRAY P(*) PRICE1 - PRICE17;
+ARRAY NP(*) NP1 - NP17;
+DO K=1 TO HBOUND(P);
+NP(K) = P(K)*1.1;
+END;
+RUN;
+
+/*  %scoreit(ACT01), price2 in obs 5 will be 126.50  */
