@@ -339,37 +339,168 @@ SELECT A.*, B.SALES_Y1
 FROM SALES AS A LEFT JOIN SALES (RENAME=SALES=SALES_Y1) AS B
 ON A.ID = B.ID AND B.YEAR=1 ;
 QUIT ;
-
--------------------------------------------------------------------
--------------------------------------------------------------------
--------------------------------------------------------------------
--------------------------------------------------------------------
 ___________________________________________________________________
-DATA CARS;  SET SASHELP.CARS;
-INVOICE1=ROUND(INVOICE/1000)*1000;
+* tutorial;
+
+* CREATE VARIABLES;
+* Round the invoice prices to the nearest thousands;
+* Create an indicator variable LONG= 1 if length is longer than 200. Label the variable.;
+* Create a variable MPG that the average MPG City and MPG Highway
+DATA CARS; SET SASHELP.CARS;
+INVOICE1=ROUND(INVOICE,1000);
 IF LENGTH>200 THEN LONG=1; ELSE LONG=0;
-MPG=AVERAGE(MPG_CITY, MPG_HIGHWAY);
-PROC SORT DATA=CARS; BY INVOICE;
-IF FIRST.MAKE OR LAST.MAKE THEN OUTPUT;
+MPG=(MPG_CITY+MPG_HIGHWAY)/2;
 RUN;
-PROC SORT DATA+CARS; BY TYPE INVOICE;
+
+* SELECT MOST AND LEAST EXPENSIVE CARS;
+* For each make, find the most and the least expensive model
+PROC SORT DATA=CARS; BY MAKE INVOICE;
+DATA CARS1; SET CARS; BY MAKE INVOICE;
+IF FIRST.MAKE OR LAST.MAKE THEN OUTPUT; 
+RUN;
+* For each type of car, find the most and the least expensive model and make;
+PROC SORT DATA=CARS; BY TYPE INVOICE;
 DATA CARS2; SET CARS; BY TYPE INVOICE;
-IF FIRST.TYPE oR LAST.TYPE THEN OUTPUT;
-
-PROC MEANS DATA=CARS; BY TYPE;
-VAR INVOICE;
-OUTPUT OUT=AVE MEAN=M_PRICE;
+IF FIRST.TYPE OR LAST.TYPE;
 RUN;
 
-DATA CARS3;
+*FIND AVERAGE PRICE AND DEFINE ABOVE;
+/*Find the average invoice price of each type of the vehicles, then create an indicator variable for each vehicle that equals 1 if its price is above the average.*/
+*  You need to merge the averages to the original data to define the indicator variable;
+PROC SORT DATA=CARS; BY TYPE;
+PROC MEANS DATA=CARS NOPRINT; BY TYPE;
+VAR INVOICE;
+OUTPUT OUT=AVE MEAN=M_PRICE
+RUN;
+DATA CARS3; MERGE CARS AVE; BY TYPE;
+IF INVOICE>M_PRICE THEN ABOVE=1 ;
+ELSE ABOVE=0;
+RUN;
+
+*USE PROC SQL TO REDO IT;
+/*Use PROC SQL to find for each make: 
+the number of different models, 
+the number of different cylinders, 
+the average MPG City and Highway, 
+the maximum horsepower, 
+the maximum and minimum invoice prices*/
 PROC SQL;
-CREATE TABLE AVE AS
-SELECT DISTINCT TYPE, MEAN (INVOICE) AS AVE_P
+CREATE TABLE AVE AS 
+SELECT DISTINCT TYPE, MEAN(INVOICE) AS AVE_P
 FROM CARS
 GROUP BY TYPE;
-
 CREATE TABLE CARS4 AS
-SELECT *, CASE WHEN A.INVOICE>B.AVE_P THEN 1 ELSE 0 END
-FROM CASE AS A, AVE AS B
-WHERE A.TYPE =B.TYPE
+SELECT *, CASE WHEN A.INVOICE>B.AVE_P THEN 1 ELSE 0 END AS ABOVE
+FROM CARS AS A, AVE AS B
+WHERE A.TYPE=B.TYPE;
 QUIT;
+
+*FIND DESCRIPTIVE STATISTICS;
+PROC SQL;
+SELECT DISTINCT MAKE, COUNT(MODEL) AS N_MODEL, COUNT(DISTINCT CYLINDERS) AS N_CYLINDER,
+(MPG_CITY+MPG_HIGHWAY)/2 AS MPG, MAX(HORSEPOWER) AS MAX_POWER, MIN(INVOICE) AS MIN_PRICE,
+MAX(INVOICE) AS MAX_PRICE
+FROM CARS
+GROUP BY MAKE;
+QUIT;
+-------------------------------------------------------------------
+*CALCULATE VARIABLES;
+* Calculate the percentage of personal consumption, investment, exports, ;
+* and government spending in Gross national product ;
+* Create a variable YEAR for the year of observation using YEAR=YEAR(DATE) 
+DATA GNP; SET SASHELP.GNP;
+CON=CONSUMP/GNP;
+INV=INVEST/GNP;
+EXP=EXPORTS/GNP;
+GOV=GOVT/GNP;
+YEAR=YEAR(DATE);
+RUN;
+
+*FIND ANNUAL STATISTICS;
+/*Use PROC SQL to create a dataset A that has the total GNP, the percentage of consumption, investment, exports, and government spending in GNP, in each year. Use PROC SQL to create a dataset B that has the average the percentage of consumption, investment, exports, and government spending in GNP
+Merge datasets A and B, and create a variable if the percentage of consumption is above the average.*/
+PROC SQL;
+CREATE TABLE A AS 
+SELECT YEAR, SUM(GNP) AS GNP, SUM(CONSUMP)/SUM(GNP) AS CON, SUM(INVEST)/SUM(GNP) AS INV,
+SUM(EXPORTS)/SUM(GNP) AS EXP, SUM(GOVT)/SUM(GNP) AS GOV
+FROM GNP
+GROUP BY YEAR;
+CREATE TABLE B AS 
+SELECT MEAN(CON) AS M_CON, MEAN(INV) AS M_INV, MEAN(EXP) AS M_EXP, MEAN(GOV) AS M_GOV
+FROM A;
+QUIT;
+
+*MERGE DATA AND DEFINE ABOVE;
+/*Cut the sample into 10-year periods, and find the number of years in each period that the percentage of consumption is above the average. Do you see the consumption is getting more or less important in GNP?*/
+PROC SQL;
+CREATE TABLE C AS 
+SELECT *, CASE WHEN A.CON>B.M_CON THEN 1 ELSE 0 END AS ABOVE
+FROM A AS A, B AS B;
+QUIT;
+
+*YOU CAN ALSO TRY THIS;
+DATA C; SET A;
+IF _N_=1 THEN SET B;
+IF CON>M_CON THEN ABOVE=1; ELSE ABOVE=0;
+PERIOD=FLOOR((YEAR-1900)/10); * DEFINE 10-YEAR PERIOD;
+RUN;
+
+*FIND NUMBER OF AGOVE IN EACH PERIOD;
+PROC SQL;
+SELECT PERIOD, SUM(ABOVE) AS N_ABOVE
+FROM C
+GROUP BY PERIOD;
+QUIT;
+-------------------------------------------------------------------
+*CREATE VARIABLES;
+/*Use dataset sashelp.heart to answer the following questions
+Create an indicate variable Male = 1 if SEX = Male, and 0 otherwise
+Create an variable AgeGroup = “Young” if AgeAtStart <30, “Mid Age” if 30<=AgeAtStart <=60, and “Old” if AgeAtStart >60. Lebel the variable*/
+DATA HEART; SET SASHELP.HEART; 
+*INFORMAT AGEGROUP $10.; 
+MALE=(SEX="Male");
+IF AGEATSTART<=30 THEN AGEGROUP="Young";
+ELSE IF 30<=AGEATSTART<=60 THEN AGEGROUP='Mid Age';
+ELSE AGEGROUP='Old';
+LABEL AGEGROUP="Young if age<=30, Mid Age if age between 30 and 60, Old if age >60";
+RUN;
+
+* find for each type of SEX, the different Cause of Death;
+PROC SQL;
+SELECT DISTINCT SEX, DEATHCAUSE, COUNT(DEATHCAUSE) AS N
+FROM HEART WHERE DEATHCAUSE NE ''
+GROUP BY SEX, DEATHCAUSE;
+QUIT;
+
+*FIND STATISTICS FOR WEIGH GROUPS;
+/*find for each weight status, the total number of people in the group, the average weight, the average cholesterol, the percentage of people with high blood pressure status, the percentage of people who are heavy smokers*/
+DATA HEART1; SET HEART;
+HIGHBP=(BP_STATUS="High");
+HSMOKER=(SMOKING>15);
+DEAD=(STATUS="Dead");
+RUN;
+PROC SQL;
+SELECT DISTINCT WEIGHT_STATUS, COUNT(WEIGHT) AS N, MEAN(WEIGHT) AS WEIGHT, MEAN(CHOLESTEROL) AS CHOLESTEROL, 
+SUM(HIGHBP)/COUNT(HIGHBP) AS HIGHBP_PCT, SUM(HSMOKER)/COUNT(HSMOKER) AS HEAVY_PCT
+FROM HEART1 WHERE WEIGHT_STATUS NE ''
+GROUP BY WEIGHT_STATUS;
+QUIT;
+
+*FIND STATISTICS FOR SMOKING STATUS;
+/*find for each smoking status, the total number of people in the group, the average cholesterol, the percentage of people with high blood pressure status, the percentage of death*/
+PROC SQL;
+SELECT DISTINCT SMOKING_STATUS, COUNT(SMOKING_STATUS) AS N, MEAN(CHOLESTEROL) AS CHOLESTEROL, 
+SUM(HIGHBP)/COUNT(HIGHBP) AS HIGHBP_PCT, SUM(DEAD)/COUNT(DEAD) AS DEATH_PCT
+FROM HEART1 WHERE SMOKING_STATUS NE ''
+GROUP BY SMOKING_STATUS;
+QUIT;
+-------------------------------------------------------------------
+* create output data set work.SQL01 using sashelp.cars as input, compute average MP_City for each group of make, name calculated variable AvgCityMPG, output Make and AvgCityMPG;
+PROC SQL;
+CREATE TABLE SQL01 AS 
+SELECT DISTINCT MAKE, MEAN(MPG_CITY) AS AVGCITYMPG
+FROM SASHELP.CARS
+GROUP BY MAKE;
+QUIT;
+
+/* correct answer for %scoreit(SQL01): AvgCityMPG for MAKE=MINI is 26.5*/
