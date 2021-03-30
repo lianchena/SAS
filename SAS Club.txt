@@ -1,0 +1,7 @@
+* Gold Prices 1;
+
+/* 
+1. Please obtain daily prices of gold from the internet and import the data into SAS. Calculate the daily returns (percentage of price changes).
+2. Some people believe that if prices keep rising in the past N days, it is more likely that the price will increase tomorrow, while others believe the opposite. Can you test it? So for example, if the daily returns are all positive in the past three days, what is the probability of the return being positive today? What will happen if you change the three days to two, five, seven, or ten days?
+3. One technical trading strategy is called moving average. In any day, you calculate the average price in the past N days. If today's price rises from below to above this average, you buy and then hold. It the price declines from above to below the average, you sell. Can you write a SAS code to test this strategy? You need to find out the prices (days) at which you buy and sell, and the calculate the returns from buying and selling. You can change N to see if a particular N is better than others.
+*/
