@@ -1,0 +1,49 @@
+DATA WORK.CARS;
+	SET SASHELP.CARS;
+	LENGTH CLASS $10.;
+	IF MSRP>30000 THEN DO;
+		CLASS="LUXURY";
+		PRICE="HIGH";
+	END;
+	ELSE CLASS="NOT HIGH";
+	IF UPCASE(ORIGIN)="EUROPE" THEN TAXES=MSRP*0.1;
+	UNIQUE_CAR=CATX("|",MAKE,MODEL);
+	PROFIT=MSRP-INVOICE;
+	FINAL=SUM(PROFIT,TAXES*-1);
+RUN;
+PROC PRINT DATA=WORK.CARS; 
+RUN;
+------------------------------------------------------------------------------
+DATA EUROCARS;
+	SET SASHELP.CARS;
+	IF UPCASE(ORIGIN)="EUROPE";
+	PROFIT=MSRP-INVOICE;
+	IF PROFIT>5000;
+RUN;
+PROC PRINT DATA=EUROCARS;
+RUN;
+------------------------------------------------------------------------------
+PROC SORT DATA=E OUT=E_SORT;
+	BY NO;
+RUN;
+
+PROC SORT DATA=AT OUT=AT_SORT;
+	BY NO;
+RUN;
+
+DATA AT_E;
+	MERGE AT_SORT (IN=A) E_SORT (IN=B);
+	BY NO;
+	IF A=1 AND B=1;
+RUN;
+
+DATA AT_no_E;
+	MERGE AT_SORT (IN=A) E_SORT (IN=B);
+	BY NO;
+	IF A=1 AND B=0;
+RUN;
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------

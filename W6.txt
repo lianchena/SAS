@@ -1,0 +1,58 @@
+PROC SQL;
+SELECT ORIGIN, COUNT(DISTINCT MAKE) AS N_BRANDS
+FROM SASHELP.CARS
+GROUP BY ORIGIN;
+QUIT;
+
+
+PROC SQL;
+CREATE TABLE C1 AS 
+SELECT MAKE, MAX(INVOICE) AS MAX_P
+FROM SASHELP.CARS
+GROUP BY MAKE;
+
+SELECT MEAN(MAX_P) AS P
+FROM C1
+WHERE SUBSTR(MAKE, 1,1)="M";
+QUIT;
+
+
+Q4: Use RETAIN statement and dataset sashelp.stocks to answer the questions: 
+    Create a dataset called VOLUME that has a variable VOL which is the total trading volume in each year.  
+    Print the first 10 observations from VOLUME and only the following variables: YEAR, VOL. 
+    What is the trading volume of IBM in 2nd quarter of 2000?
+DATA STOCKS; SET SASHELP.STOCKS; 
+YEAR=YEAR(DATE);
+PROC SORT DATA=STOCKS; BY STOCK YEAR DATE; RUN;
+
+DATA VOLUME; SET STOCKS; BY STOCK YEAR DATE;
+IF FIRST.YEAR THEN VOL=0;
+RETAIN VOL;
+VOL=VOL+VOLUME;
+IF LAST.YEAR THEN OUTPUT;
+
+PROC PRINT DATA=VOLUME (OBS=10);
+VAR YEAR VOL;
+RUN;
+
+
+
+Use SAS Array and DO LOOP and dataset sashelp.pricedata to answer the questions: 
+    Create an array for Price1 ñ Price17. 
+    Use DO LOOP to calculate a variable COUNT that is the total number of prices (Price1 ñ Price17) 
+    that are higher than or equal to unit price (Price). 
+    Print the first 10 observations but only these variables: DATE, COUNT. 
+    What is the value of COUNT in MAR98?
+DATA PRICE; SET SASHELP.PRICEDATA; 
+ARRAY P(*) PRICE1-PRICE17;
+COUNT=0;
+DO I = 1 TO 17;
+IF P(I)>=PRICE THEN COUNT=COUNT+1;
+END;
+RUN;
+
+PROC PRINT DATA=PRICE (OBS=10);
+VAR DATE COUNT;
+RUN;
+Matthew McLoughlin对所有人说： 04:02 PM
+thank you!

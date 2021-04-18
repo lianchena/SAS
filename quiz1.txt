@@ -1,4 +1,5 @@
 Proc PRINT data = sashelp.cars; run;
+Proc contents data=sashelp.cars; run;
 
 DATA CARS; SET SASHELP.CARS; 
 DATA GNP; SET SASHELP.GNP;

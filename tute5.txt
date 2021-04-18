@@ -1,0 +1,103 @@
+/*Within each type of the cars, rank the cars from the most expensive to the least expensive. 
+So for example, the most expensive SUV is ranked as 1*/
+PROC SORT DATA=SASHELP.CARS OUT=CARS; BY TYPE DESCENDING INVOICE;
+DATA CARS1 EXP; SET CARS (KEEP=MAKE MODEL TYPE INVOICE); BY TYPE DESCENDING INVOICE;
+IF FIRST.TYPE THEN RANK=0;
+RETAIN RANK;
+RANK=RANK+1;
+IF FIRST.TYPE THEN OUTPUT EXP;
+OUTPUT CARS1;
+RUN;
+
+/*So for each type, the ranks will be standardized into a range from 1 to 10, 
+with 10 being the most expensive. */
+DATA CARS2; MERGE CARS1 EXP(KEEP=TYPE RANK RENAME=RANK=RK); BY TYPE;
+ATAR=10 - FLOOR(RANK*10/(RK+1));
+RUN;
+/* == or. */
+* We can use PROC RANK to do the task. Note the default rankings starts at 0 ;
+PROC RANK DATA=CARS1 OUT=CARS3 GROUPS=10; BY TYPE;
+VAR INVOICE;
+RANKS RK1;
+RUN;
+
+/*The RANK procedure computes ranks for one or more numeric variables across the observations of a SAS data set and writes the ranks to a new SAS data set. PROC RANK by itself produces no printed output.
+GROUPS=number-of-groups
+assigns group values ranging from 0 to number-of-groups minus 1.*/
+/*use rk1 due to group attribute generate another new ranks
+RANK always have value of 1 in dataset EXP so need rk to differentiate the rank, 
+then rank can contain value other than 1*/
+---------------------------------------------------------------------------
+/*Some people think that if stock prices keep increasing for a few days, the price are more likely to go up in the next day. While others believe the opposite.
+Calculate the monthly stock returns for each stock.
+Conditional on last month’s return is positive, what is the probability of current month’s return being positive?
+If the returns are positive in each of the past three months, what is the probability of current month’s return being positive?
+If the returns are negative in each of the past three months, what is the probability of current month’s return being positive? 
+*/
+
+PROC SORT DATA=SASHELP.STOCKS (KEEP=STOCK DATE ADJCLOSE) OUT=STOCKS; BY STOCK DATE;
+DATA STOCKS1; SET STOCKS; BY STOCK DATE;
+RET=ADJCLOSE/LAG(ADJCLOSE)-1;
+STOCK1=LAG(STOCK); STOCK2=LAG2(STOCK); STOCK3=LAG3(STOCK);
+SIGN=SIGN(RET);
+* The first SIGN is a variable name. The second SIGN is a SAS function ;
+SIGN1=LAG(SIGN);    /*FEB vs MAR*/
+SIGN2=LAG2(SIGN);  /*JAN vs FEB*/
+SIGN3=LAG3(SIGN);  /* DEC vs JAN*/
+
+/* Below is to make sure we are comparing the same stocks */
+IF STOCK NE STOCK1 THEN DO; RET = .; SIGN1=. ; END;
+IF STOCK NE STOCK2 THEN SIGN2=. ;
+IF STOCK NE STOCK3 THEN  SIGN3=. ;
+
+IF SIGN1=SIGN2=SIGN3=1 THEN POS3=1; ELSE POS3=0;
+NEG3=(SIGN1=SIGN2=SIGN3=-1);
+* NOTE INCORRECT ZEROS IN POS3 AND NEG3 DUE TO MISSING VALUES;
+P3=SIGN1+SIGN2+SIGN3;
+* ANY MISSING VALUE WILL RESULT IN MISSING P3. P3 HAS FOUR POSSIBLE VALUES: 3, -3, 1, -1;
+S=(SIGN=1); IF SIGN=. THEN S=. ;
+RUN;
+/* just to show the content of stocks1 by displaying a sample of 20 observations */
+PROC PRINT DATA=STOCKS1 (OBS=20); RUN;
+* CALCULATE THE CONDITIONAL PROBABILTY USING PROC FREQ *;
+PROC MEANS DATA=STOCKS1;
+WHERE SIGN1=1;
+VAR RET SIGN S;
+RUN
+
+* NOTE SIGN CAN HAVE VALUE OF -1, SO THE MEAN IS NOT THE PROBABILITY;
+/* Probability has a value between 0 and 1 */
+* TO FIND PROBABILITY, CREATE A NEW VARIABLE S=1 IF SIGN=1 ELSE S=0 IF SIGN=-1;
+* USE PROC SQL to calculate the prob of all +++ ;
+PROC SQL;
+SELECT SUM(CASE WHEN SIGN=1 THEN 1 ELSE 0 END)/COUNT(SIGN) AS UP_POS
+FROM STOCKS1
+WHERE P3=3;
+SELECT SUM(CASE WHEN SIGN=1 THEN 1 ELSE 0 END)/COUNT(SIGN) AS UP_NEG
+FROM STOCKS1
+WHERE P3=-3;
+QUIT;
+
+* USE PROC FREQ ;
+PROC FREQ DATA=STOCKS1;
+TABLES SIGN1*SIGN;
+RUN;
+PROC FREQ DATA=STOCKS1;
+WHERE P3 IN (3, -3);
+TABLE SIGN*POS3;
+TABLE SIGN*NEG3;
+RUN;
+
+/*The PROC FREQ is one of the most frequently used SAS procedures which helps to summarize categorical variable. It calculates count/frequency and cumulative frequency of categories of a categorical variable.
+The TABLES statement requests one-way to n-way frequency and crosstabulation tables and statistics for those tables.
+If you omit the TABLES statement, PROC FREQ generates one-way frequency tables for all data set variables that are not listed in the other statements.
+*/
+
++++
+++-
++-+
+-++
++--
+-+-
+--+
+---
