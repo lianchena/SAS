@@ -43,6 +43,80 @@ DATA AT_no_E;
 	IF A=1 AND B=0;
 RUN;
 ------------------------------------------------------------------------------
+/* format, label, split, PROC format
+(help->learning SAS programming) */
+DATA WORK.FINANCE;
+	SET FINANCE.FINANCE;
+	LABEL SSN = "Social Security Number";
+RUN;
+PROC PRINT;
+RUN;
+
+PROC PRINT DATA=WORK.FINANCE LABEL SPLIT="*";
+	FORMAT SALARY DOLLAR12.2 NAME $4. DATA DDMMYY10.;
+	LABEL Name="First *Name";
+RUN;
+------------------------------------------------------------------------------
+DATA WORK.FINANCE;
+	SET FINANCE.FINANCE;
+	LABEL SSN = "Social Security Number";
+RUN;
+PROC PRINT;
+RUN;
+
+PROC FORMAT;
+	VALUE SALARYRANGE 0-<25000="SALARY1"
+					  25000-<30000="SALARY2"
+					  30000-<50000="SALARY3";
+RUN;
+
+PROC PRINT DATA=WORK.FINANCE LABEL SPLIT="*";
+	FORMAT SALARY SALARYRANGE. NAME $4. DATA DDMMYY10.;
+	LABEL Name="First *Name";
+RUN;
+------------------------------------------------------------------------------
+TITLE "Origin and Drivetrain Freq - one way";
+PROC FREQ DATA=SASHELP.CARS;
+	TABLES ORIGIN DRIVETRAIN;
+RUN;
+
+TITLE "Origin and Drivetrain Freq - n way (pivot table)";
+PROC FREQ DATA=SASHELP.CARS;
+	TABLES ORIGIN*DRIVETRAIN;
+RUN;
+
+TITLE "Origin and Drivetrain Freq - n way (option list)";
+PROC FREQ DATA=SASHELP.CARS;
+	TABLES ORIGIN*DRIVETRAIN/LIST;
+RUN;
+
+TITLE "Origin and Drivetrain Freq - n way (option cross list)";
+PROC FREQ DATA=SASHELP.CARS;
+	TABLES ORIGIN*DRIVETRAIN/CROSSLIST;
+RUN;
+
+TITLE "Origin and Drivetrain Freq - n way (option list with output)";
+PROC FREQ DATA=SASHELP.CARS;
+	TABLES ORIGIN*DRIVETRAIN/LIST OUT=FREQ;
+RUN;
+------------------------------------------------------------------------------
+TITLE "PROC MEAN - all numeric vairables";
+PROC MEANS DATA=SASHELP.CARS;
+RUN;
+
+PROC MEANS DATA=SASHELP.CARS MEAN KURT SKEW;
+	VAR MSRP;
+RUN;
+
+PROC MEANS DATA=SASHELP.CARS MEAN KURT SKEW;
+	CLASS ORIGIN;
+	VAR MSRP;
+RUN;
+______________________________________________________________________________
+
+
+
+------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
