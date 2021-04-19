@@ -1,0 +1,56 @@
+TITLE "Descriptive statistics on cholesterol based on weight status";
+PROC MEANS DATA=SASHELP.HEART N MEAN STDERR CLM;
+	CLASS WEIGHT_STATUS;
+	VAR CHOLESTEROL;
+RUN;
+
+ODS GRAPHICS ON;
+TITLE "HISTOGRAM AND PROBABILITY PLOT FOR CHOLESTEROL BY WEIGHT STATUS";
+PROC UNIVARIATE DATA=SASHELP.HEART;
+	CLASS WEIGHT_STATUS;
+	VAR CHOLESTEROL;
+	HISTOGRAM CHOLESTEROL;
+	INSET SKEWNESS KURTOSIS;
+	PROBPLOT CHOLESTEROL;
+	INSET SKEWNESS KURTOSIS;
+RUN;
+TITLE "Box and Whisker Plot for Cholesterol by weight status";
+PROC SGPLOT DATA=SASHELP.HEART;
+	VBOX CHOLESTEROL / CATEGORY = WEIGHT_STATUS;
+RUN;
+ODS GRAPHICS OFF;
+------------------------------------------------------------------------------
+DATA WORK.HEART; SET SASHELP.HEART;
+	IF UPCASE(WEIGHT_STATUS) NE "UNDERWEIGHT";
+RUN;
+TITLE "PROC TTEST - Cholesterol vs weight status";
+PROC TTEST DATA=WORK.HEART;
+	CLASS WEIGHT_STATUS;
+	VAR CHOLESTEROL;
+RUN;
+/* 0.0036 hence reject H0: normal weight and overweight have equal cholesterol == normal weight and overweight dont have equal cholesterol*/
+
+ODS GRAPHICS ON;
+TITLE "One way anova age of death vs chol status";
+PROC GLM DATA=SASHELP.HEART PLOTS=DIAGNOSTICS(UNPACK);
+	CLASS CHOL_STATUS;
+	MODEL AGEATDEATH=CHOL_STATUS;
+	MEANS CHOL_STATUS/HOVTEST;
+RUN;
+QUIT;
+ODS GRAPHICS OFF;
+
+ODS GRAPHICS ON;
+TITLE "Post Hoc Pairwise Comparison";
+PROC GLM DATA=SASHELP.HEART;
+	CLASS CHOL_STATUS;
+	MODEL AGEATDEATH=CHOL_STATUS;
+	LSMEANS CHOL_STATUS / PDIFF=ALL ADJUST=TUKEY;
+	LSMEANS CHOL_STATUS / PDIFF=CONTROL("Borderline") ADJUST=DUNNETT;
+RUN;
+QUIT;
+ODS GRAPHICS OFF;
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
