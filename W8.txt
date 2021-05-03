@@ -1,0 +1,63 @@
+/*ROE=PM x ATO x LEV
+ROE = RNOA + LEV x SPREAD
+RNOA = PM x ATO
+SPREAD=RNOA – after-tax cost of debt
+*/
+
+RNOA 
+PM (profit margin)
+ATO (asset turnover ratio)
+INV (inventory)
+AR (accounts receivable)
+CAPEX (capital expenditure)
+ETR (effective tax rate)
+EQ (inventory method)
+AQ (auditor opinion)
+SGA (selling and general expenses)
+LF (labor force, sales per employee)
+ΔWC (changes in working capital)
+ΔNCO (changes in non-current operating assets)
+ΔWC (change in net financial assets)
+
+RNOAt+1 = α0 +α1RNOAt + α2PMt + α3ATOt + α4TACCt + α5INVt + α6ARt + α7ETRt + α8SGXt 
+RNOA = Operating Income after depreciation (OIADP)/ Net Operating Assets
+PM = OIADP/SALE
+ATO=SALE/NOA
+TACC=Net Income (NI) -  Operating Cash Flow(OANCF)
+INV=INVT/NOA
+AR=RECT/NOA
+ETR=Tax Expense (TXT)/Pre-tax Income (PI)
+SGX=Selling and General Expenses (XSGA)/SALE
+
+Net operating assets (NOA) = operating assets – operating liabilities 
+= (total assets – cash and short-term investments) – (total assets – total debt – total common equity – preferred equity – minority interest)
+NOA = (AT – CHE – IVST) – (AT – DLTT – DLC – CEQ – PSTK – MIB)
+    = DLTT + DLC + CEQ + PSTK + MIB – CHE - IVST
+=SUM(DLTT, DLC, CEQ, PSTK, MIB,  -CHE,  -IVST)
+
+DATA EST TEST; SET ALL;
+IF FYEAR <= 2010 THEN OUTPUT EST;
+ELSE OUTPUT TEST;
+PROC REG DATA=EST OUTEST=EST1;
+MODEL RNOA1 = RNOA PM ATO TACC INV AR ETR SGX;
+RUN;
+PROC REG DATA=EST OUTEST=EST1;
+MODEL RNOA1 = RNOA PM ATO TACC INV AR ETR SGX / SELECTION=STEPWISE;
+RUN;
+
+* MERGE THE ESTIMATED COEFFICIENTS WITH OBS IN THE TEST SAMPLE ;
+DATA EST2; SET EST1;
+RENAME RNOA=B_RNOA PM=B_PM ATO=B_ATO TACC=B_TACC INV=B_INV AR=B_AR SGX=B_SGX;
+
+DATA TEST1; SET TEST;
+IF _N_=1 THEN SET EST2;
+P_RNOA1=INTERCEPT + B_RNOA*RNOA + B_PM*PM + B_ATO*ATO + B_TACC*TACC + B_INV*INV + B_AR*AR + B_SGX*SGX;
+ERROR=ABS(RNOA1-P_RNOA1);
+ERROR_RW=ABS(RNOA1-RNOA); * RANDOWM WALK MODEL;
+F_OP1=NOA*P_RNOA1; * FORECAST OPERATING INCOME;
+RUN;
+PROC MEANS DATA=TEST1 N MEAN MIN P10 Q1 MEDIAN Q3 P90 MAX MAXDEC=3;
+VAR ERROR ERROR_RW;
+RUN;
+
+

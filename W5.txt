@@ -72,7 +72,6 @@ PROC MEANS DATA=WT;
 RUN;
 
 
-
 /*ODS Styles*/
 PROC TEMPLATE; LIST STYLES; RUN;
 Analysis
@@ -94,12 +93,8 @@ HTMLEncore
 Harvest
 HighContrast
 HighContrastLarge
-Journal
-Journal1a
-Journal2
-Journal2a
-Journal3
-Journal3a
+Journal Journal1a
+Journal2 Journal2a Journal3 Journal3a
 Listing
 Meadow
 MeadowPrinter
@@ -109,26 +104,19 @@ Monospace
 Moonflower
 Netdraw
 NoFontDefault
-Normal
-NormalPrinter
+Normal NormalPrinter
 Ocean
-Pearl
-PearlJ
+Pearl PearlJ
 Plateau
-PowerPointDark
-PowerPointLight
+PowerPointDark PowerPointLight
 Printer
 Raven
 Rtf
 Sapphire
-SasDocPrinter
-SasWeb
-Seaside
-SeasidePrinter
+SasDocPrinter SasWeb
+Seaside SeasidePrinter
 Snow
 StatDoc
 Statistical
 Word
-vaDark
-vaHighContrast
-vaLight
+vaDark vaHighContrast vaLight
