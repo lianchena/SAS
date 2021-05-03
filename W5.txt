@@ -1,0 +1,134 @@
+/*ODS, or Output Delivery System*/
+/*RTF means “Rich text format” – for word processing output*/
+ODS RTF;
+SAS code that creates output;
+ODS RTF CLOSE;
+
+ODS LISTING <FILE='file-specification'>;
+ODS HTML <BODY='HTML-FILE-PATHNAME.HTML>';
+ODS PDF <FILE='PDF-FILE-PATHNAME.PDF'>;
+ODS RTF <FILE='RTF-FILE-PATHNAME.RTF'>;
+ODS PS <FILE='PS-FILE-PATHNAME.PS'>;
+ODS PLC <FILE='PCL-FILE-PATHNAME.PCL'>;
+
+DATA TEST; SET "C:\SASDATA\SOMEDATA";
+* DEFINE WHERE HTML LISTING WILL GO;
+TITLE 'ODS HTML Example';
+ODS HTML BODY='C:\SASDATA\ODS.HTML’;
+        STYLE=JOURNAL;
+ODS PDF FILE='C:\SASDATA\ODS.PDF';
+PROC MEANS MAXDEC=2; VAR AGE TIME1-TIME4;
+RUN;
+* CLOSE THE HTML OUTPUT;
+ODS HTML CLOSE;
+ODS PDF CLOSE;
+RUN;
+ODS PREFERNCES;
+
+DATA TEST; SET SASHELP.CARS;
+* DEFINE WHERE PDF LISTING WILL GO;
+TITLE 'ODS PDF Example';
+ODS PDF FILE='C:\Users\15758\Desktop\data3300\W5\ODS.PDF';
+        STYLE=STATISTICAL;
+PROC MEANS MAXDEC=2; VAR INVOICE MSRP ;
+RUN;
+* CLOSE THE PDF OUTPUT;
+ODS PDF CLOSE;
+RUN;
+
+/*Use TRACE to discover names of output tables.*/
+DATA TABLE;
+INPUT A B COUNT;
+DATALINES;
+0 0 12
+0 1 15
+1 0 18
+1 1 3
+;
+ODS TRACE ON;
+PROC FREG; WEIGHT COUNT;
+TABLES A*B/CHISQ;
+TITLE 'CHI-SQAURE ANALYSIS FOR A 2X2 TABLE';
+RUN;
+ODS TRACE OFF;
+
+/*select to produce output only contains tables of interest
+or exclude to exclude certain tables from output*/
+ODS SELECT CROSSTABFREQS CHISQ;
+PROC FREQ; WEIGHT COUNT;
+   TABLES A*B /CHISQ;
+RUN; 
+
+/*captures the output from PROC MEANS into a SAS data file named STATS
+stored in a SAS data set named STATS*/
+DATA WT;
+INPUT WEIGHT @@;
+DATALINES;
+64 71 53 67 55 58
+77 57 56 51 76 68
+;
+ODS SUMMARY=STATS;
+PROC MEANS DATA=WT;
+RUN;
+
+
+
+/*ODS Styles*/
+PROC TEMPLATE; LIST STYLES; RUN;
+Analysis
+BarrettsBlue
+BlockPrint  
+DTree
+Daisy
+Default
+Dove
+EGDefault
+Excel
+FancyPrinter
+Festival
+FestivalPrinter
+Gantt
+GrayscalePrinter
+HTMLBlue
+HTMLEncore
+Harvest
+HighContrast
+HighContrastLarge
+Journal
+Journal1a
+Journal2
+Journal2a
+Journal3
+Journal3a
+Listing
+Meadow
+MeadowPrinter
+Minimal
+MonochromePrinter
+Monospace
+Moonflower
+Netdraw
+NoFontDefault
+Normal
+NormalPrinter
+Ocean
+Pearl
+PearlJ
+Plateau
+PowerPointDark
+PowerPointLight
+Printer
+Raven
+Rtf
+Sapphire
+SasDocPrinter
+SasWeb
+Seaside
+SeasidePrinter
+Snow
+StatDoc
+Statistical
+Word
+vaDark
+vaHighContrast
+vaLight
