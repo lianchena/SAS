@@ -290,7 +290,7 @@ WHERE
 GROUP BY
 HAVING 
 ORDER BY;
-QUIT ;
+QUIT;
 -------------------------------------------------------------------
 * calculate the price discount for cars;
 DATA CARS; SET SASHELP.CARS; RUN;

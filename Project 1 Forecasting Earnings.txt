@@ -1,0 +1,147 @@
+/*Link folder*/
+LIBNAME ASGMT1 'C:\Users\15758\Desktop\ACX3300\A1';
+/*Paste and copy*/
+DATA EARNINGS; SET ASGMT1.EARNINGS; RUN;
+/*Check variables*/
+PROC CONTENTS DATA=EARNINGS; RUN;
+
+RANUNI(0);
+RETAIN VALUE 0;
+DO K=1 TO 4; END;
+SUBSTR("ABCDEFG", 2, 3)="BCD";
+ARRAY A(*) $Q1-Q50; (A(1)=Q1)     ARRAY B(*) VAR1--VAR9; (B(3)=VAR3)
+
+IF ... THEN DO; ...; ...; END; ELSE ...;
+DATA NEW; MERGE ONE(IN=A) TWO(IN=B); BY VAR; IF A AND B; RUN;
+PROC SORT DATA=EARNINGS; OUT=SAMPLE NODUPKEY; BY VAR; WHERE;
+_________________________________________
+/*Statistics*/
+PROC SORT DATA=ACX.EPS OUT=EPS; BY FYEAR; 
+PROC MEANS DATA=EARNINGS MEAN NOPRINT; VAR EPS; BY FYEAR; 
+OUTPUT OUT=EPS_YR MEAN=MEAN_EPS MEDIAN=MEDIAN_EPS N=FIRMS; RUN;
+PROC PRINT DATA=EPS_YR; TITLE 'NAME'; RUN;
+/*PROC MEANS
+CLM CSS CV KURTOSIS LCLM MAX MEAN MEDIAN(P50) MIN MODE N NMISS
+P1 P5 P10 P90 P95 P99 PROBT Q1(P25) Q3(P75) QRANGE RANGE 
+SKEWNWSS(SKEW) STDDEV(STD) STDERR SUM SUMWGT T UCLM USS VAR*/
+
+PROC UNIVARIATE DATA=ACX.EPS TRIMMED=0.01; VAR EPS; RUN;
+PROC UNIVARIATE DATA=ACX.EPS; WHERE EPS BETWEEN -10 AND 10; VAR EPS;
+HISTOGRAM EPS / MIDPOINTS=0 TO 1 BY 1; RUN;
+
+PROC TTEST DATA=EPS; WHERE FYEAR IN (2018, 2019) AND EPS BETWEEN -10 AND 10; 
+CLASS FYEAR; VAR EPS; RUN;
+
+PROC CORR DATA= "C:\SASDATA\SOMEDATA"; VAR TIMEl-TIME4; WITH AGE; RUN;
+PROC CORR DATA=ROE1 SPEARMAN; VAR ROE PM ATO LEV; RUN;
+/*default is PEARSON*/
+
+PROC REG DATA=EST OUTEST=EST1;
+MODEL RNOA1 = RNOA PM ATO TACC INV AR ETR SGX / SELECTION=STEPWISE; RUN;
+_________________________________________
+/*Only print the same error message three times*/
+OPTIONS ERROR=3; 
+%MACRO PRODUCT(PRODUCT=, YEAR=);
+%MEND PRODUCT;
+%PRODUCT(PRODUCT=5, YEAR=2000); RUN;
+
+PROC SQL ;
+CREATE TABLE NEW AS
+SELECT Variables
+FROM Datasets
+WHERE                     (age>30)
+GROUP BY                (gender)
+HAVING                    (mean(weight)>100)
+ORDER BY;
+QUIT;
+_________________________________________
+/*Download .sas7bdat*/
+DATA ASGMT1.CARS; SET SASHELP.CARS; RUN;
+/*Export into .csv*/
+PROC EXPORT DATA= SASHELP.CARS 
+            OUTFILE= "C:\Users\15758\Desktop\ACX3300\A1\cars.csv" 
+            DBMS=CSV REPLACE;
+     PUTNAMES=YES;
+RUN;
+/*import other types of file*/
+PROC IMPORT OUT=ACX3300.cars;
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\CARS.CSV";
+DBMS=CSV REPLACE;
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+PROC IMPORT OUT=ACX3300.xls1;
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\EXAMPLE.XLS";
+DBMS=XLS REPLACE;
+SHEET="Database";
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+PROC IMPORT OUT=ACX3300.xlsx1;
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\test1.XLSX";
+DBMS=XLSX REPLACE;
+SHEET="test1";
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+PROC IMPORT OUT=ACX3300.rev2094;
+DATAFILE="C:\Users\15758\Desktop\data3300\W1\rev2094.TXT";
+DBMS=TAB REPLACE;
+GETNAMES=YES;
+DATAROW=2;
+RUN;
+
+/*Infile import*/
+/*
+101 A  12 22.3 25.3 28.2 30.6 5 0
+102 A  11 22.8 27.5 33.3 35.8 5 0
+104 B  12 22.8 30.0 32.8 31.0 4 0
+110 A  12 18.5 26.0 29.0 27.9 5 1
+*/
+DATA MYDATA;
+INFILE 'C:\Users\15758\Desktop\data3300\W1\EXAMPLE.TXT';
+INPUT ID $ 1-3 GP $ 5 AGE 6-9 TIME1 10-14 TIME2 15-19 TIME3 20-24;
+PROC PRINT; RUN;
+PROC MEANS DATA=MYDATA;
+RUN;
+* advanced infile statement;
+* DLM=',' separate by , if no space;
+* FIRSTOBS=2 line start;
+* PBS=26 #obs to record;
+DATA MYDATA;
+INFILE 'C:\Users\15758\Desktop\data3300\W1\example.csv' DLM=', '  FIRSTOBS=2 OBS=11;
+INPUT GROUP $ AGE TIME1 TIME2 TIME3 Time4 SOCIO;
+PROC PRINT DATA=MYDATA; RUN;
+_________________________________________
+Summary:
+Please complete the following tasks using SAS, write a short report of no more than 2000 words, and submit the report and your SAS code on Moodle. Your SAS code must be correct and produce the same results as those in your report.
+Dataset: EARNINGS.sas7bat
+""
+Part 1: Data Preparation (5 marks)p.232
+From the dataset, select a sample of firms based on your student ID number. So if your student ID ends with “5”, then you select firms whose GVKEY starts with “5”. But if your student ID ends with “0”, then you use the full dataset.
+Construct the variables
+Winsorize the continuous variables each year at top and bottom 1%
+
+Part 2: Descriptive Statistics and Correlation Coefficients (5 marks)
+Provide and discuss descriptive statistics of the variables
+Provide and discuss correlation coefficients between the variables
+
+Part 3: Simple Models (10 marks)
+Construct forecasts for one-year, two-year, and three-year ahead earnings per share using random walk model
+Construct forecasts for next year’s earnings per share using moving average in the past two, three, and five years
+Calculate the forecasts errors
+Compare and discuss the forecast errors from different models
+
+Part 4: Complex Models (5 marks)
+Construct the forecast model using a set of accounting variables to forecast ROA(=net income in year t+1 divided by total assets in year t)
+Use OLS regressions and your data to estimate the model
+Discuss the results from regressions
+Use stepwise regressions to select the model
+
+Part 5: Model Back Testing (5 marks)
+Partition your sample into an estimation sample and a test sample
+Estimate the model using the estimation sample
+Use the estimated coefficients to construct forecasts for the test sample
+Calculate forecast errors
+Repeat the above process for 100 times and report the descriptive statistics of the forecast errors
+Discuss the forecasting ability of the models
