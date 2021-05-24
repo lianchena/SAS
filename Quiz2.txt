@@ -17,3 +17,97 @@ DBMS=CSV REPLACE;
 GETNAMES=YES;
 DATAROW=2;
 RUN;
+
+* sum, growth rate & filter;
+PROC SQL;
+CREATE TABLE GNP AS SELECT DISTINCT YEAR(DATE) AS YEAR, SUM(GNP) AS GNP
+FROM SASHELP.GNP
+GROUP BY CALCULATED YEAR;
+CREATE TABLE GNP1 AS SELECT A.*, A.GNP/B.GNP-1 AS GROWTH
+FROM GNP AS A, GNP AS B
+WHERE A.YEAR=B.YEAR+1;
+SELECT * FROM GNP1 WHERE GROWTH > 0.1;
+QUIT;
+
+* unique;
+PROC SQL;
+SELECT ORIGIN, COUNT(DISTINCT MAKE) AS N_BRANDS
+FROM SASHELP.CARS
+GROUP BY ORIGIN;
+QUIT;
+
+* SQL;
+PROC SQL;
+CREATE TABLE CARS AS SELECT MAKE, MAX(INVOICE)AS HIGH
+FROM SASHELP.CARS
+GROUP BY MAKE;
+SELECT MEAN(NIGH)
+FROM CARS
+WHERE FIRST(LEFT(MAKE))='M';
+WHERE SUBSTR(MAKE, 1,1)='M';
+QUIT;
+
+* retain;
+DATA STOCKS; SET SASHELP.STOCKS; 
+YEAR=YEAR(DATE);
+PROC SORT DATA=STOCKS; BY STOCK YEAR DATE; RUN;
+DATA VOLUME; SET STOCKS; BY STOCK YEAR DATE;
+IF FIRST.YEAR THEN VOL=0;
+RETAIN VOL;
+VOL=VOL+VOLUME;
+IF LAST.YEAR THEN OUTPUT;
+PROC PRINT DATA=VOLUME (OBS=10);
+VAR YEAR VOL;
+RUN;
+
+* array do loop;
+DATA PRICE; SET SASHELP.PRICEDATA; 
+ARRAY P(*) PRICE1-PRICE17;
+COUNT=0;
+DO I = 1 TO 17;
+IF P(I)>=PRICE THEN COUNT=COUNT+1;
+END;
+RUN;
+PROC PRINT DATA=PRICE (OBS=10);
+VAR DATE COUNT;
+RUN;
+
+* Arithmetic/Mathematical;
+/*
+ABS(X)            ABS(-9)=9
+EXP(X)            EXP(1)=e=2.71828
+LOG(X)            LOGe(10)=2.30259
+LOG10(X)        LOG10(10)=1
+FACT(X)           FACT(7)=7x6x5x4x3x2x1=5040
+MAX(X)
+MEAN(X)
+MEDIAN(X)
+MIN(X)
+MOD(X,K)        remainder x/k, MOD(5,3)=2, MOD(6,2)=0
+N(x1,x2,x3...)    # of non-missing values, N(1,2,.,4)=3
+NMISS(x1,x2,x3...)    # of missing values, N(1,2,.,4)=1
+ORDINAL(k,x1,x2,x3...)  find kth num in sorted list ORDINAL(1,11,6,9,3)=3
+RANUNI(0)      random number
+RANUNI(X)      uniform/same random number
+RANNOR(seed) random number from normal distribution with mean 0 sd 1
+SIGN(X)           return sign of X as 1 or -1
+SQRT(X)           SQRT(9)=3
+SUM(X)            SUM(x1,x2,x3)  SUM(OF x1-x3) ignore missing value
+                         SUM(x1-x3)  keep missing value=.
+*/
+/*
+ROUND (3.1415, .01) *Returns the value 3.14;
+ROUND(107,5) * Returns the value 105;
+ROUND(3.6234)* Returns the value 4 (rounds to integer);
+*/
+* Date and Time;
+DATA DATE ; 
+DATE = MDY(03, 16, 2021);
+YEAR = YEAR(DATE) ;
+MONTH = MONTH(DATE);
+DAY = DAY(DATE);
+QUARTER = QTR(DATE);
+WEEK = WEEK(DATE) ;
+WEEKDAY = WEEKDAY(DATE);
+TARGET=TODAY(); 
+AGE=INTCK('YEAR',BDATE,TARGET); 
